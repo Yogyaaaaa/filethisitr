@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>filethisitr.com</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Montserrat:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --gold: #e8b84b;
+    --gold-dim: rgba(232,184,75,0.2);
+    --gold-mid: rgba(232,184,75,0.5);
+    --gold-bright: rgba(232,184,75,0.8);
+    --bg: #0a0a0a;
+    --text: #e8dcc0;
+    --text-muted: rgba(232,220,192,0.45);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Montserrat', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background:
+      radial-gradient(ellipse at 60% 40%, rgba(180,140,60,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse at 20% 80%, rgba(180,140,60,0.04) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* PAGE SYSTEM */
+  .page {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    z-index: 2;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+  }
+  .page.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* WORDMARK */
+  .wordmark {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.6rem, 4vw, 2.8rem);
+    font-weight: 300;
+    letter-spacing: 0.02em;
+    color: var(--gold);
+    margin-bottom: 0.6rem;
+    animation: fadeUp 1s ease forwards 0.2s;
+    opacity: 0;
+  }
+
+  .divider {
+    width: 40px;
+    height: 0.5px;
+    background: rgba(232,184,75,0.35);
+    margin: 0 auto 4rem;
+    animation: fadeUp 1s ease forwards 0.4s;
+    opacity: 0;
+  }
+
+  /* BACK BUTTON */
+  .back-btn {
+    position: fixed;
+    top: 2rem; left: 2rem;
+    background: none;
+    border: 0.5px solid var(--gold-dim);
+    color: var(--text-muted);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    transition: border-color 0.3s, color 0.3s;
+    z-index: 10;
+    display: none;
+  }
+  .back-btn:hover { border-color: var(--gold-mid); color: var(--gold); }
+  .back-btn.visible { display: block; }
+
+  /* HOME CARDS */
+  .home-cards {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    width: 100%;
+    max-width: 600px;
+  }
+
+  .home-card {
+    background: rgba(255,255,255,0.02);
+    border: 0.5px solid var(--gold-dim);
+    border-radius: 2px;
+    padding: 3rem 2.5rem;
+    width: 240px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    opacity: 0;
+    transition: border-color 0.4s, background 0.4s, transform 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .home-card:nth-child(1) { animation: fadeUp 1s ease forwards 0.7s; }
+  .home-card:nth-child(2) { animation: fadeUp 1s ease forwards 0.9s; }
+
+  .home-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-bright), transparent);
+    transform: scaleX(0);
+    transition: transform 0.4s;
+  }
+  .home-card:hover { border-color: var(--gold-mid); background: rgba(232,184,75,0.04); transform: translateY(-4px); }
+  .home-card:hover::after { transform: scaleX(1); }
+  .home-card:hover .home-card-title { color: var(--gold); }
+  .home-card:hover .arrow { opacity: 1; transform: translateX(0); }
+
+  .home-card-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.6rem;
+    font-weight: 300;
+    font-style: italic;
+    color: var(--text);
+    transition: color 0.4s;
+  }
+
+  .arrow {
+    position: absolute;
+    bottom: 1.2rem; right: 1.4rem;
+    opacity: 0;
+    transform: translateX(-6px);
+    transition: opacity 0.3s, transform 0.3s;
+    color: var(--gold-bright);
+    font-size: 1rem;
+    font-weight: 300;
+  }
+
+  /* INNER PAGE LAYOUT */
+  .inner-page {
+    width: 100%;
+    max-width: 680px;
+    text-align: center;
+  }
+
+  .page-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+    font-weight: 300;
+    font-style: italic;
+    color: var(--gold);
+    margin-bottom: 0.8rem;
+  }
+
+  .page-hint {
+    font-size: 0.65rem;
+    letter-spacing: 0.18em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 3.5rem;
+    line-height: 1.8;
+  }
+
+  /* OPTION CARDS */
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    text-align: left;
+  }
+
+  .option-card {
+    background: rgba(255,255,255,0.02);
+    border: 0.5px solid var(--gold-dim);
+    border-radius: 2px;
+    padding: 1.4rem 1.8rem;
+    cursor: pointer;
+    position: relative;
+    transition: border-color 0.35s, background 0.35s, transform 0.25s;
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+    text-decoration: none;
+  }
+  .option-card:hover {
+    border-color: var(--gold-mid);
+    background: rgba(232,184,75,0.04);
+    transform: translateX(4px);
+  }
+  .option-card:hover .opt-title { color: var(--gold); }
+  .option-card:hover .opt-arrow { opacity: 1; }
+
+  .opt-number {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem;
+    font-weight: 300;
+    color: var(--gold-mid);
+    min-width: 1.5rem;
+  }
+
+  .opt-content { flex: 1; }
+
+  .opt-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.15rem;
+    font-weight: 400;
+    color: var(--text);
+    margin-bottom: 0.25rem;
+    transition: color 0.35s;
+  }
+
+  .opt-sub {
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    line-height: 1.7;
+  }
+
+  .opt-arrow {
+    color: var(--gold-bright);
+    font-size: 1rem;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  /* FILE ITR OPTIONS */
+  .itr-options {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+  }
+
+  .itr-card {
+    background: rgba(255,255,255,0.02);
+    border: 0.5px solid var(--gold-dim);
+    border-radius: 2px;
+    padding: 2.2rem 2rem;
+    width: 240px;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+    transition: border-color 0.35s, background 0.35s, transform 0.3s;
+    text-decoration: none;
+    display: block;
+  }
+  .itr-card:hover {
+    border-color: var(--gold-mid);
+    background: rgba(232,184,75,0.04);
+    transform: translateY(-4px);
+  }
+  .itr-card:hover .itr-title { color: var(--gold); }
+
+  .itr-icon {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+  }
+
+  .itr-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.25rem;
+    font-weight: 400;
+    font-style: italic;
+    color: var(--text);
+    margin-bottom: 0.6rem;
+    transition: color 0.35s;
+  }
+
+  .itr-sub {
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    line-height: 1.8;
+  }
+
+  .itr-badge {
+    position: absolute;
+    top: -0.6rem; left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg);
+    border: 0.5px solid var(--gold-dim);
+    color: var(--text-muted);
+    font-size: 0.52rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.6rem;
+    white-space: nowrap;
+    border-radius: 2px;
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 2.5rem; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(15,15,15,0.95);
+    border: 0.5px solid var(--gold-dim);
+    color: var(--text-muted);
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 0.8rem 1.6rem;
+    border-radius: 2px;
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    pointer-events: none;
+    z-index: 99;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<button class="back-btn" id="backBtn" onclick="goHome()">← Back</button>
+
+<!-- HOME PAGE -->
+<div class="page active" id="homePage">
+  <div style="text-align:center; width:100%; max-width:600px;">
+    <div class="wordmark">filethisitr.com</div>
+    <div class="divider"></div>
+    <div class="home-cards">
+      <div class="home-card" onclick="showPage('advisoryPage')">
+        <div class="home-card-title">Tax Advisory</div>
+        <span class="arrow">→</span>
+      </div>
+      <div class="home-card" onclick="showPage('itrPage')">
+        <div class="home-card-title">File my ITR</div>
+        <span class="arrow">→</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAX ADVISORY PAGE -->
+<div class="page" id="advisoryPage">
+  <div class="inner-page">
+    <div class="page-title">Tax Advisory</div>
+    <div class="page-hint">Select your category below — we'll open a pre-filled WhatsApp message<br>so our expert knows exactly how to help you.</div>
+    <div class="options">
+
+      <a class="option-card" href="https://wa.me/918307797718?text=Hi%2C%20I%20need%20tax%20advisory%20for%20a%20Salaried%20Individual." target="_blank">
+        <div class="opt-number">01</div>
+        <div class="opt-content">
+          <div class="opt-title">Salaried Individual</div>
+          <div class="opt-sub">Tax planning · Deductions · Form 16 · HRA · 80C benefits</div>
+        </div>
+        <div class="opt-arrow">→</div>
+      </a>
+
+      <a class="option-card" href="https://wa.me/918307797718?text=Hi%2C%20I%20need%20tax%20advisory%20for%20Business%20or%20Self-Employment." target="_blank">
+        <div class="opt-number">02</div>
+        <div class="opt-content">
+          <div class="opt-title">Business / Self Employed</div>
+          <div class="opt-sub">GST · Advance tax · Profit & loss · Presumptive taxation</div>
+        </div>
+        <div class="opt-arrow">→</div>
+      </a>
+
+      <a class="option-card" href="https://wa.me/918307797718?text=Hi%2C%20I%20need%20tax%20advisory%20for%20NRI%20Taxation." target="_blank">
+        <div class="opt-number">03</div>
+        <div class="opt-content">
+          <div class="opt-title">NRI Taxation</div>
+          <div class="opt-sub">Foreign income · DTAA · Repatriation · FEMA compliance</div>
+        </div>
+        <div class="opt-arrow">→</div>
+      </a>
+
+      <a class="option-card" href="https://wa.me/918307797718?text=Hi%2C%20I%20need%20tax%20advisory%20for%20Capital%20Gains." target="_blank">
+        <div class="opt-number">04</div>
+        <div class="opt-content">
+          <div class="opt-title">Capital Gains</div>
+          <div class="opt-sub">Property · Stocks · Mutual funds · Indexation · LTCG / STCG</div>
+        </div>
+        <div class="opt-arrow">→</div>
+      </a>
+
+      <a class="option-card" href="https://wa.me/918307797718?text=Hi%2C%20I%20have%20received%20a%20Notice%20from%20the%20Income%20Tax%20Department%20and%20need%20help." target="_blank">
+        <div class="opt-number">05</div>
+        <div class="opt-content">
+          <div class="opt-title">Notice from IT Department</div>
+          <div class="opt-sub">Scrutiny · Demand notice · Rectification · Appeal filing</div>
+        </div>
+        <div class="opt-arrow">→</div>
+      </a>
+
+    </div>
+  </div>
+</div>
+
+<!-- FILE MY ITR PAGE -->
+<div class="page" id="itrPage">
+  <div class="inner-page">
+    <div class="page-title">File my ITR</div>
+    <div class="page-hint">Choose how you'd like to connect with us.</div>
+    <div class="itr-options">
+
+      <a class="itr-card" href="https://wa.me/918307797718?text=Hi%2C%20I%20want%20to%20file%20my%20ITR.%20Please%20guide%20me." target="_blank">
+        <div class="itr-icon">💬</div>
+        <div class="itr-title">WhatsApp</div>
+        <div class="itr-sub">Instant connect · Quick process · No login needed</div>
+      </a>
+
+      <div class="itr-card" onclick="showToast()">
+        <div class="itr-badge">Coming Soon</div>
+        <div class="itr-icon">🎫</div>
+        <div class="itr-title">Raise a Ticket</div>
+        <div class="itr-sub">Login required · Track your case · Secure document upload</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">Login & ticket system — coming soon!</div>
+
+<script>
+  function showPage(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.getElementById('backBtn').classList.add('visible');
+  }
+
+  function goHome() {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('homePage').classList.add('active');
+    document.getElementById('backBtn').classList.remove('visible');
+  }
+
+  function showToast() {
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+</script>
+</body>
+</html>
