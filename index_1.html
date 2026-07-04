@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>filethisitr.com</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Montserrat:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --gold: #e8b84b;
+    --gold-dim: rgba(232,184,75,0.2);
+    --gold-mid: rgba(232,184,75,0.5);
+    --gold-bright: rgba(232,184,75,0.8);
+    --bg: #0a0a0a;
+    --text: #e8dcc0;
+    --text-muted: rgba(232,220,192,0.45);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Montserrat', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background:
+      radial-gradient(ellipse at 60% 40%, rgba(180,140,60,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse at 20% 80%, rgba(180,140,60,0.04) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* PAGE SYSTEM */
+  .page {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    z-index: 2;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+    overflow-y: auto;
+  }
+  .page.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* WORDMARK */
+  .wordmark {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.6rem, 4vw, 2.8rem);
+    font-weight: 300;
+    letter-spacing: 0.02em;
+    color: var(--gold);
+    margin-bottom: 0.6rem;
+    animation: fadeUp 1s ease forwards 0.2s;
+    opacity: 0;
+  }
+
+  .divider {
+    width: 40px;
+    height: 0.5px;
+    background: rgba(232,184,75,0.35);
+    margin: 0 auto 4rem;
+    animation: fadeUp 1s ease forwards 0.4s;
+    opacity: 0;
+  }
+
+  /* BACK BUTTON */
+  .back-btn {
+    position: fixed;
+    top: 2rem; left: 2rem;
+    background: none;
+    border: 0.5px solid var(--gold-dim);
+    color: var(--text-muted);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    transition: border-color 0.3s, color 0.3s;
+    z-index: 10;
+    display: none;
+  }
+  .back-btn:hover { border-color: var(--gold-mid); color: var(--gold); }
+  .back-btn.visible { display: block; }
+
+  /* HOME / GENERIC CARDS */
+  .home-cards {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    width: 100%;
+    max-width: 600px;
+  }
+
+  .home-card {
+    background: rgba(255,255,255,0.02);
+    border: 0.5px solid var(--gold-dim);
+    border-radius: 2px;
+    padding: 3rem 2.5rem;
+    width: 240px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    opacity: 0;
+    transition: border-color 0.4s, background 0.4s, transform 0.3s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+  .home-card:nth-child(1) { animation: fadeUp 1s ease forwards 0.7s; }
+  .home-card:nth-child(2) { animation: fadeUp 1s ease forwards 0.9s; }
+
+  .home-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-bright), transparent);
+    transform: scaleX(0);
+    transition: transform 0.4s;
+  }
+  .home-card:hover { border-color: var(--gold-mid); background: rgba(232,184,75,0.04); transform: translateY(-4px); }
+  .home-card:hover::after { transform: scaleX(1); }
+  .home-card:hover .home-card-title { color: var(--gold); }
+  .home-card:hover .arrow { opacity: 1; transform: translateX(0); }
+
+  .home-card-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.5rem;
+    font-weight: 300;
+    font-style: italic;
+    color: var(--text);
+    transition: color 0.4s;
+    margin-bottom: 0.5rem;
+  }
+
+  .home-card-sub {
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    line-height: 1.7;
+  }
+
+  .arrow {
+    position: absolute;
+    bottom: 1.2rem; right: 1.4rem;
+    opacity: 0;
+    transform: translateX(-6px);
+    transition: opacity 0.3s, transform 0.3s;
+    color: var(--gold-bright);
+    font-size: 1rem;
+    font-weight: 300;
+  }
+
+  /* INNER PAGE LAYOUT */
+  .inner-page {
+    width: 100%;
+    max-width: 680px;
+    text-align: center;
+  }
+
+  .page-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+    font-weight: 300;
+    font-style: italic;
+    color: var(--gold);
+    margin-bottom: 0.8rem;
+  }
+
+  .page-hint {
+    font-size: 0.65rem;
+    letter-spacing: 0.18em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 3.5rem;
+    line-height: 1.8;
+  }
+
+  /* OPTION CARDS */
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    text-align: left;
+  }
+
+  .option-card {
+    background: rgba(255,255,255,0.02);
+    border: 0.5px solid var(--gold-dim);
+    border-radius: 2px;
+    padding: 1.4rem 1.8rem;
+    cursor: pointer;
+    position: relative;
+    transition: border-color 0.35s, background 0.35s, transform 0.25s;
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+    text-decoration: none;
+  }
+  .option-card:hover {
+    border-color: var(--gold-mid);
+    background: rgba(232,184,75,0.04);
+    transform: translateX(4px);
+  }
+  .option-card:hover .opt-title { color: var(--gold); }
+  .option-card:hover .opt-arrow { opacity: 1; }
+
+  .opt-number {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem;
+    font-weight: 300;
+    color: var(--gold-mid);
+    min-width: 1.5rem;
+  }
+
+  .opt-content { flex: 1; }
+
+  .opt-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.15rem;
+    font-weight: 400;
+    color: var(--text);
+    margin-bottom: 0.25rem;
+    transition: color 0.35s;
+  }
+
+  .opt-sub {
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    line-height: 1.7;
+  }
+
+  .opt-arrow {
+    color: var(--gold-bright);
+    font-size: 1rem;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  /* SERVICE OPTIONS (2-up cards, used under both Guest and Login paths) */
+  .service-options {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+  }
+
+  .service-card {
+    background: rgba(255,255,255,0.02);
+    border: 0.5px solid var(--gold-dim);
+    border-radius: 2px;
+    padding: 2.4rem 2rem;
+    width: 250px;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+    transition: border-color 0.35s, background 0.35s, transform 0.3s;
+    text-decoration: none;
+    display: block;
+  }
+  .service-card:hover {
+    border-color: var(--gold-mid);
+    background: rgba(232,184,75,0.04);
+    transform: translateY(-4px);
+  }
+  .service-card:hover .service-title { color: var(--gold); }
+
+  .service-icon {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+  }
+
+  .service-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.25rem;
+    font-weight: 400;
+    font-style: italic;
+    color: var(--text);
+    margin-bottom: 0.6rem;
+    transition: color 0.35s;
+  }
+
+  .service-sub {
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    line-height: 1.8;
+  }
+
+  /* LOGIN BUTTONS */
+  .login-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+
+  .login-btn {
+    background: rgba(255,255,255,0.02);
+    border: 0.5px solid var(--gold-dim);
+    border-radius: 2px;
+    padding: 1rem 1.5rem;
+    cursor: pointer;
+    color: var(--text);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.7rem;
+    transition: border-color 0.3s, background 0.3s, transform 0.25s;
+  }
+  .login-btn:hover {
+    border-color: var(--gold-mid);
+    background: rgba(232,184,75,0.04);
+    transform: translateY(-2px);
+  }
+  .login-btn .icon { font-size: 1rem; }
+
+  .login-divider {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: var(--text-muted);
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin: 0.3rem 0;
+  }
+  .login-divider::before, .login-divider::after {
+    content: '';
+    flex: 1;
+    height: 0.5px;
+    background: var(--gold-dim);
+  }
+
+  .email-input {
+    background: rgba(255,255,255,0.02);
+    border: 0.5px solid var(--gold-dim);
+    border-radius: 2px;
+    padding: 0.9rem 1.2rem;
+    color: var(--text);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.8rem;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+  .email-input:focus { border-color: var(--gold-mid); }
+  .email-input::placeholder { color: var(--text-muted); }
+
+  /* TICKET BADGE STYLE REUSED FOR "COMING SOON" TAGS */
+  .badge {
+    position: absolute;
+    top: -0.6rem; left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg);
+    border: 0.5px solid var(--gold-dim);
+    color: var(--text-muted);
+    font-size: 0.52rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.6rem;
+    white-space: nowrap;
+    border-radius: 2px;
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 2.5rem; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(15,15,15,0.95);
+    border: 0.5px solid var(--gold-dim);
+    color: var(--text-muted);
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 0.8rem 1.6rem;
+    border-radius: 2px;
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    pointer-events: none;
+    z-index: 99;
+    white-space: nowrap;
+    text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<button class="back-btn" id="backBtn" onclick="goHome()">← Back</button>
+
+<!-- HOME PAGE: Guest vs Login -->
+<div class="page active" id="homePage">
+  <div style="text-align:center; width:100%; max-width:600px;">
+    <div class="wordmark">filethisitr.com</div>
+    <div class="divider"></div>
+    <div class="home-cards">
+      <div class="home-card" onclick="enterFlow('guest')">
+        <div class="home-card-title">Guest Login</div>
+        <div class="home-card-sub">Quick & casual · Connects via WhatsApp</div>
+        <span class="arrow">→</span>
+      </div>
+      <div class="home-card" onclick="showPage('loginPage')">
+        <div class="home-card-title">Login</div>
+        <div class="home-card-sub">Email or Google · Full case tracking on site</div>
+        <span class="arrow">→</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN PAGE (Email / Google) -->
+<div class="page" id="loginPage">
+  <div class="inner-page">
+    <div class="page-title">Login</div>
+    <div class="page-hint">Sign in to manage your case, book a slot,<br>and track everything in one place.</div>
+    <div class="login-buttons">
+      <button class="login-btn" onclick="enterFlow('login')">
+        <span class="icon">G</span> Continue with Google
+      </button>
+      <div class="login-divider">or</div>
+      <input type="email" class="email-input" id="emailInput" placeholder="Enter your email">
+      <button class="login-btn" onclick="enterFlow('login')">
+        <span class="icon">✉</span> Continue with Email
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- SERVICE SELECTION (shared for both Guest and Login — content adjusts via mode) -->
+<div class="page" id="servicePage">
+  <div class="inner-page">
+    <div class="page-title" id="serviceTitle">How can we help?</div>
+    <div class="page-hint" id="serviceHint">Choose the service you need.</div>
+    <div class="service-options">
+      <div class="service-card" onclick="selectService('advisory')">
+        <div class="service-icon">💬</div>
+        <div class="service-title">Help me on taxes</div>
+        <div class="service-sub">Tax advisory & consultation</div>
+      </div>
+      <div class="service-card" onclick="selectService('itr')">
+        <div class="service-icon">📄</div>
+        <div class="service-title">Assist me in ITR filing</div>
+        <div class="service-sub">Guided, end-to-end ITR filing</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GUEST: ADVISORY CATEGORY PICK -> WHATSAPP -->
+<div class="page" id="guestAdvisoryPage">
+  <div class="inner-page">
+    <div class="page-title">Help me on taxes</div>
+    <div class="page-hint">Select your category — we'll open a pre-filled WhatsApp message<br>so our expert knows exactly how to help you.</div>
+    <div class="options">
+      <a class="option-card" href="#" data-msg="Hi, I need tax advisory for a Salaried Individual.">
+        <div class="opt-number">01</div>
+        <div class="opt-content">
+          <div class="opt-title">Salaried Individual</div>
+          <div class="opt-sub">Tax planning · Deductions · Form 16 · HRA · 80C benefits</div>
+        </div>
+        <div class="opt-arrow">→</div>
+      </a>
+      <a class="option-card" href="#" data-msg="Hi, I need tax advisory for Business or Self-Employment.">
+        <div class="opt-number">02</div>
+        <div class="opt-content">
+          <div class="opt-title">Business / Self Employed</div>
+          <div class="opt-sub">GST · Advance tax · Profit & loss · Presumptive taxation</div>
+        </div>
+        <div class="opt-arrow">→</div>
+      </a>
+      <a class="option-card" href="#" data-msg="Hi, I need tax advisory for NRI Taxation.">
+        <div class="opt-number">03</div>
+        <div class="opt-content">
+          <div class="opt-title">NRI Taxation</div>
+          <div class="opt-sub">Foreign income · DTAA · Repatriation · FEMA compliance</div>
+        </div>
+        <div class="opt-arrow">→</div>
+      </a>
+      <a class="option-card" href="#" data-msg="Hi, I need tax advisory for Capital Gains.">
+        <div class="opt-number">04</div>
+        <div class="opt-content">
+          <div class="opt-title">Capital Gains</div>
+          <div class="opt-sub">Property · Stocks · Mutual funds · Indexation · LTCG / STCG</div>
+        </div>
+        <div class="opt-arrow">→</div>
+      </a>
+      <a class="option-card" href="#" data-msg="Hi, I have received a Notice from the Income Tax Department and need help.">
+        <div class="opt-number">05</div>
+        <div class="opt-content">
+          <div class="opt-title">Notice from IT Department</div>
+          <div class="opt-sub">Scrutiny · Demand notice · Rectification · Appeal filing</div>
+        </div>
+        <div class="opt-arrow">→</div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- GUEST: ITR -> WHATSAPP DIRECT -->
+<div class="page" id="guestItrPage">
+  <div class="inner-page">
+    <div class="page-title">Assist me in ITR filing</div>
+    <div class="page-hint">You'll be connected instantly on WhatsApp to begin your ITR filing.</div>
+    <div class="service-options">
+      <a class="service-card" href="#" id="guestItrWhatsapp">
+        <div class="service-icon">💬</div>
+        <div class="service-title">Continue on WhatsApp</div>
+        <div class="service-sub">Instant connect · Quick process · No login needed</div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- LOGGED-IN: PLACEHOLDER DASHBOARD (backend pending) -->
+<div class="page" id="loggedInPage">
+  <div class="inner-page">
+    <div class="page-title" id="loggedInTitle">You're in</div>
+    <div class="page-hint" id="loggedInHint">Your ticket, slot booking, and payment dashboard is being built.<br>For now, we'll continue this on WhatsApp — you won't lose any progress once it's live.</div>
+    <div class="service-options">
+      <a class="service-card" href="#" id="loggedInWhatsapp">
+        <div class="badge">In the meantime</div>
+        <div class="service-icon">💬</div>
+        <div class="service-title">Continue on WhatsApp</div>
+        <div class="service-sub">We'll pick up right where this leaves off</div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">Full portal — coming soon!</div>
+
+<script>
+  const WHATSAPP_NUMBER = '918307797718';
+  let currentMode = null; // 'guest' or 'login'
+
+  function showPage(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.getElementById('backBtn').classList.add('visible');
+  }
+
+  function goHome() {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('homePage').classList.add('active');
+    document.getElementById('backBtn').classList.remove('visible');
+  }
+
+  // Step 1: user picked Guest or Login -> go to shared service selection page
+  function enterFlow(mode) {
+    currentMode = mode;
+    const title = document.getElementById('serviceTitle');
+    const hint = document.getElementById('serviceHint');
+    if (mode === 'guest') {
+      title.textContent = 'How can we help?';
+      hint.textContent = "You're continuing as a guest — this will connect you on WhatsApp.";
+    } else {
+      title.textContent = 'How can we help?';
+      hint.textContent = "You're signed in — everything from here happens on this website.";
+    }
+    showPage('servicePage');
+  }
+
+  // Step 2: user picked a service -> branch by mode
+  function selectService(service) {
+    if (currentMode === 'guest') {
+      if (service === 'advisory') {
+        showPage('guestAdvisoryPage');
+      } else {
+        const link = document.getElementById('guestItrWhatsapp');
+        link.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Hi, I want to file my ITR. Please guide me.")}`;
+        link.target = '_blank';
+        showPage('guestItrPage');
+      }
+    } else {
+      // Logged-in path: real ticket/slot/payment system not live yet.
+      // Placeholder routes back to WhatsApp for now, with context of which service was chosen.
+      const msg = service === 'advisory'
+        ? "Hi, I logged in on the website for tax advisory help."
+        : "Hi, I logged in on the website for ITR filing assistance.";
+      const link = document.getElementById('loggedInWhatsapp');
+      link.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
+      link.target = '_blank';
+      document.getElementById('loggedInTitle').textContent =
+        service === 'advisory' ? 'Help me on taxes' : 'Assist me in ITR filing';
+      showPage('loggedInPage');
+    }
+  }
+
+  // Wire up advisory category links (guest path) with WhatsApp deep links
+  document.querySelectorAll('#guestAdvisoryPage .option-card').forEach(card => {
+    card.addEventListener('click', function(e) {
+      e.preventDefault();
+      const msg = this.getAttribute('data-msg');
+      window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
+    });
+  });
+
+  function showToast(text) {
+    const t = document.getElementById('toast');
+    if (text) t.textContent = text;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+</script>
+</body>
+</html>
