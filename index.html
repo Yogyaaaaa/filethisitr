@@ -643,5 +643,47 @@
     setTimeout(() => t.classList.remove('show'), 3000);
   }
 </script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<button id="testPayBtn" style="position:fixed; bottom:2rem; right:2rem; background:#e8b84b; color:#0a0a0a; border:none; padding:0.8rem 1.4rem; border-radius:4px; font-family:'Montserrat',sans-serif; font-size:0.75rem; letter-spacing:0.05em; cursor:pointer; z-index:100;">
+  Test Payment ₹1
+</button>
+
+<script>
+document.getElementById('testPayBtn').addEventListener('click', async () => {
+  const res = await fetch('/api/create-order', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ amount: 1, ticketId: 'TEST-' + Date.now() })
+  });
+  const order = await res.json();
+
+  const options = {
+    key: 'rzp_test_T9snmVzD2zDrva', // public key, safe in frontend
+    amount: order.amount,
+    currency: order.currency,
+    name: 'filethisitr.com',
+    description: 'Test Payment',
+    order_id: order.id,
+    handler: async function (response) {
+      const verifyRes = await fetch('/api/verify-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(response)
+      });
+      const result = await verifyRes.json();
+      if (result.verified) {
+        alert('Payment verified successfully!');
+      } else {
+        alert('Payment verification failed.');
+      }
+    },
+    theme: { color: '#e8b84b' }
+  };
+
+  const rzp = new Razorpay(options);
+  rzp.open();
+});
+</script>
 </body>
 </html>
