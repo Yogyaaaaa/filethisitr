@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — filethisitr.com</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Montserrat:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --gold: #e8b84b; --gold-dim: rgba(232,184,75,0.2); --gold-mid: rgba(232,184,75,0.5);
+    --bg: #0a0a0a; --panel: #0f0f0f; --text: #e8dcc0; --text-muted: rgba(232,220,192,0.45);
+  }
+  body {
+    background: var(--bg); color: var(--text); font-family: 'Montserrat', sans-serif;
+    min-height: 100vh; display: flex;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 220px; min-width: 220px; background: var(--panel);
+    border-right: 0.5px solid var(--gold-dim); padding: 2rem 1.2rem;
+    display: flex; flex-direction: column; height: 100vh; position: sticky; top: 0;
+  }
+  .sidebar-logo {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 300;
+    color: var(--gold); font-size: 1.3rem; margin-bottom: 2.5rem;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 0.7rem; padding: 0.8rem 0.7rem;
+    border-radius: 3px; cursor: pointer; color: var(--text-muted);
+    font-size: 0.78rem; letter-spacing: 0.03em; margin-bottom: 0.3rem;
+    transition: background 0.2s, color 0.2s;
+  }
+  .nav-item:hover { background: rgba(232,184,75,0.06); color: var(--text); }
+  .nav-item.active { background: rgba(232,184,75,0.1); color: var(--gold); }
+  .nav-icon { font-size: 0.95rem; }
+  .sidebar-bottom { margin-top: auto; }
+  .logout-btn {
+    background: none; border: 0.5px solid var(--gold-dim); color: var(--text-muted);
+    padding: 0.6rem; border-radius: 2px; font-size: 0.68rem; cursor: pointer; width: 100%;
+  }
+  .logout-btn:hover { border-color: var(--gold-mid); color: var(--gold); }
+  .user-email { font-size: 0.62rem; color: var(--text-muted); margin-bottom: 0.8rem; word-break: break-all; }
+
+  /* MAIN */
+  .main { flex: 1; padding: 2.5rem 3rem; max-width: 900px; }
+  .view { display: none; }
+  .view.active { display: block; }
+  .view-title {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 300;
+    color: var(--gold); font-size: 1.6rem; margin-bottom: 0.4rem;
+  }
+  .view-hint { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 2rem; letter-spacing: 0.03em; }
+
+  /* TICKET LIST (messenger-style) */
+  .ticket-item {
+    background: rgba(255,255,255,0.02); border: 0.5px solid var(--gold-dim);
+    border-radius: 3px; padding: 1.1rem 1.4rem; margin-bottom: 0.8rem;
+    display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+  }
+  .ticket-left { flex: 1; }
+  .ticket-service {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; color: var(--text);
+    font-size: 1.05rem; margin-bottom: 0.3rem;
+  }
+  .ticket-meta { font-size: 0.65rem; color: var(--text-muted); line-height: 1.6; }
+  .ticket-right { text-align: right; }
+  .status-pill {
+    font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 0.3rem 0.7rem; border-radius: 20px; border: 0.5px solid var(--gold-dim);
+    color: var(--text-muted); display: inline-block; margin-bottom: 0.5rem;
+  }
+  .status-pill.paid { border-color: var(--gold); color: var(--gold); }
+  .pay-btn {
+    background: var(--gold); color: #0a0a0a; border: none; padding: 0.5rem 1rem;
+    border-radius: 2px; font-size: 0.68rem; cursor: pointer; letter-spacing: 0.03em;
+  }
+  .empty-state { color: var(--text-muted); font-size: 0.75rem; padding: 2rem 0; text-align: center; }
+
+  /* FORMS (reused style) */
+  .form-label {
+    font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--text-muted); margin-bottom: 0.4rem; display: block;
+  }
+  .form-select, .form-input {
+    width: 100%; max-width: 380px; background: rgba(255,255,255,0.03);
+    border: 0.5px solid var(--gold-dim); border-radius: 2px;
+    padding: 0.7rem 0.9rem; color: var(--text); font-family: 'Montserrat', sans-serif;
+    font-size: 0.8rem; margin-bottom: 1.1rem; outline: none;
+  }
+  .form-select:focus, .form-input:focus { border-color: var(--gold-mid); }
+  .slot-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; max-width: 380px; margin-bottom: 1.1rem; }
+  .slot-btn {
+    background: rgba(255,255,255,0.03); border: 0.5px solid var(--gold-dim);
+    color: var(--text); font-size: 0.68rem; padding: 0.5rem; border-radius: 2px;
+    cursor: pointer; text-align: center;
+  }
+  .slot-btn.selected { border-color: var(--gold); background: rgba(232,184,75,0.12); color: var(--gold); }
+  .submit-btn {
+    background: var(--gold); color: #0a0a0a; border: none; padding: 0.8rem 1.6rem;
+    border-radius: 2px; font-family: 'Montserrat', sans-serif; font-size: 0.75rem;
+    letter-spacing: 0.05em; cursor: pointer;
+  }
+  .service-toggle { display: flex; gap: 0.6rem; margin-bottom: 1.6rem; }
+  .toggle-btn {
+    background: rgba(255,255,255,0.02); border: 0.5px solid var(--gold-dim);
+    color: var(--text-muted); padding: 0.6rem 1.1rem; border-radius: 2px;
+    font-size: 0.72rem; cursor: pointer;
+  }
+  .toggle-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(232,184,75,0.08); }
+
+  /* UPLOAD */
+  .upload-box {
+    border: 1px dashed var(--gold-dim); border-radius: 4px; padding: 2.5rem;
+    text-align: center; color: var(--text-muted); font-size: 0.75rem; max-width: 500px;
+    cursor: pointer; margin-bottom: 1.5rem;
+  }
+  .upload-box:hover { border-color: var(--gold-mid); }
+  .file-item { font-size: 0.72rem; color: var(--text-muted); padding: 0.5rem 0; border-bottom: 0.5px solid var(--gold-dim); }
+
+  .loading-screen {
+    position: fixed; inset: 0; background: var(--bg); display: flex;
+    align-items: center; justify-content: center; color: var(--text-muted);
+    font-size: 0.8rem; z-index: 999;
+  }
+</style>
+</head>
+<body>
+
+<div class="loading-screen" id="loadingScreen">Loading your dashboard…</div>
+
+<div class="sidebar" style="display:none;" id="sidebar">
+  <div class="sidebar-logo">filethisitr.com</div>
+  <div class="nav-item active" data-view="ticketsView" onclick="switchView('ticketsView', this)">
+    <span class="nav-icon">💬</span> My Tickets
+  </div>
+  <div class="nav-item" data-view="bookView" onclick="switchView('bookView', this)">
+    <span class="nav-icon">📅</span> Book a Slot
+  </div>
+  <div class="nav-item" data-view="uploadView" onclick="switchView('uploadView', this)">
+    <span class="nav-icon">📎</span> Upload Documents
+  </div>
+  <div class="nav-item" data-view="paymentsView" onclick="switchView('paymentsView', this)">
+    <span class="nav-icon">💳</span> Payments
+  </div>
+  <div class="sidebar-bottom">
+    <div class="user-email" id="userEmail"></div>
+    <button class="logout-btn" onclick="logout()">Log out</button>
+  </div>
+</div>
+
+<div class="main" style="display:none;" id="mainArea">
+
+  <!-- MY TICKETS -->
+  <div class="view active" id="ticketsView">
+    <div class="view-title">My Tickets</div>
+    <div class="view-hint">All your requests and their current status, in one place.</div>
+    <div id="ticketList"></div>
+  </div>
+
+  <!-- BOOK A SLOT -->
+  <div class="view" id="bookView">
+    <div class="view-title">Book a Slot</div>
+    <div class="view-hint">Choose a service to get started.</div>
+
+    <div class="service-toggle">
+      <button class="toggle-btn active" id="toggleItr" onclick="setBookMode('itr')">Assist me in ITR filing</button>
+      <button class="toggle-btn" id="toggleAdvisory" onclick="setBookMode('advisory')">Help me on taxes</button>
+    </div>
+
+    <div id="itrForm">
+      <label class="form-label">ITR Form Type</label>
+      <select class="form-select" id="itrFormType">
+        <option value="ITR-1" data-price="499">ITR-1 (Sahaj) — ₹499</option>
+        <option value="ITR-2" data-price="999">ITR-2 — ₹999</option>
+        <option value="ITR-3" data-price="1499">ITR-3 — ₹1499</option>
+        <option value="ITR-4" data-price="999">ITR-4 (Sugam) — ₹999</option>
+      </select>
+      <label class="form-label">Preferred Date</label>
+      <input type="date" class="form-input" id="itrDate">
+      <label class="form-label">Preferred Time Slot</label>
+      <div class="slot-grid" id="itrSlotGrid"></div>
+      <button class="submit-btn" onclick="submitItrTicket()">Book Slot (Free)</button>
+    </div>
+
+    <div id="advisoryForm" style="display:none;">
+      <label class="form-label">Preferred Date</label>
+      <input type="date" class="form-input" id="advisoryDate">
+      <div class="view-hint" style="margin-bottom:1rem;">Time will be confirmed manually. Payment link will appear here after your consultation.</div>
+      <button class="submit-btn" onclick="submitAdvisoryTicket()">Request Consultation</button>
+    </div>
+  </div>
+
+  <!-- UPLOAD DOCUMENTS -->
+  <div class="view" id="uploadView">
+    <div class="view-title">Upload Documents</div>
+    <div class="view-hint">Attach documents (Form 16, PAN, etc.) to a ticket. Select a ticket first.</div>
+    <select class="form-select" id="uploadTicketSelect" style="max-width:380px;"></select>
+    <div class="upload-box" onclick="document.getElementById('fileInput').click()">
+      Click to select a file, or drag it here.<br>(Storage wiring is a next step — this is the interface preview.)
+    </div>
+    <input type="file" id="fileInput" style="display:none;">
+    <div id="fileList"></div>
+  </div>
+
+  <!-- PAYMENTS -->
+  <div class="view" id="paymentsView">
+    <div class="view-title">Payments</div>
+    <div class="view-hint">Any ticket with an amount set will show a Pay button here.</div>
+    <div id="paymentsList"></div>
+  </div>
+
+</div>
+
+<script>
+  const RAZORPAY_KEY_ID = 'rzp_test_T9snmVzD2zDrva';
+  const supabaseClient = window.supabase.createClient(
+    'https://unwrvqvbyhabgbxsmuxz.supabase.co',
+    'sb_publishable_ZKuG4mCAlDQlIM7pvm596Q_GZvsVEjp'
+  );
+
+  let currentUser = null;
+  let myTickets = [];
+  let selectedItrSlot = null;
+  let bookMode = 'itr';
+
+  window.addEventListener('DOMContentLoaded', async () => {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) {
+      window.location.href = '/index.html';
+      return;
+    }
+    currentUser = session.user;
+    document.getElementById('userEmail').textContent = currentUser.email;
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('sidebar').style.display = 'flex';
+    document.getElementById('mainArea').style.display = 'block';
+
+    buildSlotGrid();
+    await loadMyTickets();
+  });
+
+  function switchView(viewId, el) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById(viewId).classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    el.classList.add('active');
+    if (viewId === 'uploadView') populateUploadTicketSelect();
+    if (viewId === 'paymentsView') renderPayments();
+  }
+
+  async function logout() {
+    await supabaseClient.auth.signOut();
+    window.location.href = '/index.html';
+  }
+
+  function setBookMode(mode) {
+    bookMode = mode;
+    document.getElementById('toggleItr').classList.toggle('active', mode === 'itr');
+    document.getElementById('toggleAdvisory').classList.toggle('active', mode === 'advisory');
+    document.getElementById('itrForm').style.display = mode === 'itr' ? 'block' : 'none';
+    document.getElementById('advisoryForm').style.display = mode === 'advisory' ? 'block' : 'none';
+  }
+
+  function buildSlotGrid() {
+    const grid = document.getElementById('itrSlotGrid');
+    for (let h = 10; h < 18; h++) {
+      [`${h}:00`, `${h}:30`].forEach(time => {
+        const btn = document.createElement('div');
+        btn.className = 'slot-btn';
+        btn.textContent = time;
+        btn.onclick = () => {
+          document.querySelectorAll('#itrSlotGrid .slot-btn').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          selectedItrSlot = time;
+        };
+        grid.appendChild(btn);
+      });
+    }
+  }
+
+  async function loadMyTickets() {
+    const { data, error } = await supabaseClient
+      .from('tickets')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+    myTickets = data || [];
+    renderTickets();
+  }
+
+  function renderTickets() {
+    const list = document.getElementById('ticketList');
+    if (myTickets.length === 0) {
+      list.innerHTML = '<div class="empty-state">No tickets yet — head to "Book a Slot" to get started.</div>';
+      return;
+    }
+    list.innerHTML = myTickets.map(t => {
+      const dateOrSlot = t.service_type === 'itr'
+        ? (t.slot_datetime ? new Date(t.slot_datetime).toLocaleString() : '—')
+        : (t.preferred_date || '—');
+      const serviceLabel = t.service_type === 'itr' ? `ITR Filing — ${t.itr_form_type || ''}` : 'Tax Advisory';
+      const payBtn = (t.amount && t.payment_status !== 'paid')
+        ? `<button class="pay-btn" onclick="payForTicket('${t.id}')">Pay ₹${t.amount}</button>` : '';
+
+      return `
+        <div class="ticket-item">
+          <div class="ticket-left">
+            <div class="ticket-service">${serviceLabel}</div>
+            <div class="ticket-meta">${t.ticket_number} · ${dateOrSlot}${t.meet_sent ? ' · Meet link sent ✓' : ''}</div>
+          </div>
+          <div class="ticket-right">
+            <div class="status-pill ${t.payment_status === 'paid' ? 'paid' : ''}">${t.payment_status.replace('_',' ')}</div><br>
+            ${payBtn}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  async function submitItrTicket() {
+    const formType = document.getElementById('itrFormType');
+    const price = formType.options[formType.selectedIndex].getAttribute('data-price');
+    const date = document.getElementById('itrDate').value;
+
+    if (!date || !selectedItrSlot) {
+      alert('Please select a date and time slot.');
+      return;
+    }
+
+    const { error } = await supabaseClient.from('tickets').insert([{
+      ticket_number: 'TKT-' + Date.now().toString(36).toUpperCase(),
+      service_type: 'itr',
+      user_id: currentUser.id,
+      user_email: currentUser.email,
+      itr_form_type: formType.value,
+      slot_datetime: `${date}T${selectedItrSlot}:00`,
+      amount: parseFloat(price),
+      payment_status: 'unpaid'
+    }]);
+
+    if (error) {
+      alert('Something went wrong. Please try again.');
+      console.error(error);
+      return;
+    }
+
+    await loadMyTickets();
+    switchView('ticketsView', document.querySelector('[data-view="ticketsView"]'));
+  }
+
+  async function submitAdvisoryTicket() {
+    const date = document.getElementById('advisoryDate').value;
+    if (!date) {
+      alert('Please select a date.');
+      return;
+    }
+
+    const { error } = await supabaseClient.from('tickets').insert([{
+      ticket_number: 'TKT-' + Date.now().toString(36).toUpperCase(),
+      service_type: 'advisory',
+      user_id: currentUser.id,
+      user_email: currentUser.email,
+      preferred_date: date,
+      payment_status: 'unpaid'
+    }]);
+
+    if (error) {
+      alert('Something went wrong. Please try again.');
+      console.error(error);
+      return;
+    }
+
+    await loadMyTickets();
+    switchView('ticketsView', document.querySelector('[data-view="ticketsView"]'));
+  }
+
+  function populateUploadTicketSelect() {
+    const select = document.getElementById('uploadTicketSelect');
+    select.innerHTML = myTickets.map(t => `<option value="${t.id}">${t.ticket_number} — ${t.service_type}</option>`).join('')
+      || '<option disabled>No tickets yet</option>';
+  }
+
+  document.getElementById('fileInput').addEventListener('change', function() {
+    if (this.files.length > 0) {
+      const item = document.createElement('div');
+      item.className = 'file-item';
+      item.textContent = `📎 ${this.files[0].name} (upload storage wiring pending)`;
+      document.getElementById('fileList').prepend(item);
+    }
+  });
+
+  function renderPayments() {
+    const list = document.getElementById('paymentsList');
+    const payable = myTickets.filter(t => t.amount && t.payment_status !== 'paid');
+    if (payable.length === 0) {
+      list.innerHTML = '<div class="empty-state">No pending payments right now.</div>';
+      return;
+    }
+    list.innerHTML = payable.map(t => `
+      <div class="ticket-item">
+        <div class="ticket-left">
+          <div class="ticket-service">${t.service_type === 'itr' ? 'ITR Filing' : 'Tax Advisory'}</div>
+          <div class="ticket-meta">${t.ticket_number}</div>
+        </div>
+        <div class="ticket-right">
+          <button class="pay-btn" onclick="payForTicket('${t.id}')">Pay ₹${t.amount}</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function payForTicket(ticketRowId) {
+    const ticket = myTickets.find(t => t.id === ticketRowId);
+    if (!ticket) return;
+
+    const res = await fetch('/api/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: ticket.amount, ticketId: ticket.ticket_number })
+    });
+    const order = await res.json();
+
+    const options = {
+      key: RAZORPAY_KEY_ID,
+      amount: order.amount,
+      currency: order.currency,
+      name: 'filethisitr.com',
+      description: `Payment for ${ticket.ticket_number}`,
+      order_id: order.id,
+      handler: async function (response) {
+        const verifyRes = await fetch('/api/verify-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...response, ticket_number: ticket.ticket_number })
+        });
+        const result = await verifyRes.json();
+        if (result.verified) {
+          alert('Payment successful!');
+          await loadMyTickets();
+          renderPayments();
+        } else {
+          alert('Payment verification failed.');
+        }
+      },
+      theme: { color: '#e8b84b' }
+    };
+
+    const rzp = new Razorpay(options);
+    rzp.open();
+  }
+</script>
+</body>
+</html>
