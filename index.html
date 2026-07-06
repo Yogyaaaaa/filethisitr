@@ -613,18 +613,12 @@
         showPage('guestItrPage');
       }
     } else {
-      // Logged-in path: real ticket/slot/payment system not live yet.
-      // Placeholder routes back to WhatsApp for now, with context of which service was chosen.
-      const msg = service === 'advisory'
-        ? "Hi, I logged in on the website for tax advisory help."
-        : "Hi, I logged in on the website for ITR filing assistance.";
-      const link = document.getElementById('loggedInWhatsapp');
-      link.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
-      link.target = '_blank';
-      document.getElementById('loggedInTitle').textContent =
-        service === 'advisory' ? 'Help me on taxes' : 'Assist me in ITR filing';
-      showPage('loggedInPage');
-    }
+  if (service === 'itr') {
+    openModal('itrModal');
+  } else {
+    openModal('advisoryModal');
+  }
+}
   }
 
   // Wire up advisory category links (guest path) with WhatsApp deep links
@@ -756,7 +750,7 @@
 </div>
 
 <script>
-  const RAZORPAY_KEY_ID = 'PASTE_YOUR_RAZORPAY_KEY_ID_HERE'; // public key only
+  const RAZORPAY_KEY_ID = 'rzp_test_T9snmVzD2zDrva'; // public key only
 
   function generateSlots() {
     const slots = [];
