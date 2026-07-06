@@ -645,45 +645,267 @@
 </script>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
-<button id="testPayBtn" style="position:fixed; bottom:2rem; right:2rem; background:#e8b84b; color:#0a0a0a; border:none; padding:0.8rem 1.4rem; border-radius:4px; font-family:'Montserrat',sans-serif; font-size:0.75rem; letter-spacing:0.05em; cursor:pointer; z-index:100;">
-  Test Payment ₹1
-</button>
+<style>
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+    display: none; align-items: center; justify-content: center;
+    z-index: 200; padding: 1.5rem;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-box {
+    background: #0f0f0f; border: 0.5px solid rgba(232,184,75,0.3);
+    border-radius: 4px; padding: 2rem; max-width: 420px; width: 100%;
+    max-height: 85vh; overflow-y: auto;
+  }
+  .modal-title {
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    color: #e8b84b; font-size: 1.3rem; margin-bottom: 1.2rem;
+  }
+  .form-label {
+    font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: rgba(232,220,192,0.45); margin-bottom: 0.4rem; display: block;
+  }
+  .form-select, .form-input {
+    width: 100%; background: rgba(255,255,255,0.03);
+    border: 0.5px solid rgba(232,184,75,0.2); border-radius: 2px;
+    padding: 0.7rem 0.9rem; color: #e8dcc0; font-family: 'Montserrat', sans-serif;
+    font-size: 0.8rem; margin-bottom: 1.1rem; outline: none;
+  }
+  .form-select:focus, .form-input:focus { border-color: rgba(232,184,75,0.5); }
+  .slot-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;
+    margin-bottom: 1.1rem;
+  }
+  .slot-btn {
+    background: rgba(255,255,255,0.03); border: 0.5px solid rgba(232,184,75,0.2);
+    color: #e8dcc0; font-size: 0.68rem; padding: 0.5rem; border-radius: 2px;
+    cursor: pointer; text-align: center;
+  }
+  .slot-btn.selected { border-color: #e8b84b; background: rgba(232,184,75,0.12); color: #e8b84b; }
+  .modal-btn {
+    width: 100%; background: #e8b84b; color: #0a0a0a; border: none;
+    padding: 0.8rem; border-radius: 2px; font-family: 'Montserrat', sans-serif;
+    font-size: 0.75rem; letter-spacing: 0.05em; cursor: pointer; margin-top: 0.3rem;
+  }
+  .modal-close {
+    float: right; background: none; border: none; color: rgba(232,220,192,0.45);
+    cursor: pointer; font-size: 1rem;
+  }
+  .ticket-result { text-align: center; }
+  .ticket-number {
+    font-family: 'Cormorant Garamond', serif; color: #e8b84b;
+    font-size: 1.4rem; margin: 0.8rem 0;
+  }
+  .ticket-note { font-size: 0.7rem; color: rgba(232,220,192,0.6); line-height: 1.6; margin-bottom: 1rem; }
+</style>
+
+<!-- ITR FORM MODAL -->
+<div class="modal-overlay" id="itrModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('itrModal')">✕</button>
+    <div class="modal-title">Book your ITR filing slot</div>
+
+    <label class="form-label">ITR Form Type</label>
+    <select class="form-select" id="itrFormType" onchange="updateItrPrice()">
+      <option value="ITR-1" data-price="499">ITR-1 (Sahaj) — ₹499</option>
+      <option value="ITR-2" data-price="999">ITR-2 — ₹999</option>
+      <option value="ITR-3" data-price="1499">ITR-3 — ₹1499</option>
+      <option value="ITR-4" data-price="999">ITR-4 (Sugam) — ₹999</option>
+    </select>
+
+    <label class="form-label">Preferred Date</label>
+    <input type="date" class="form-input" id="itrDate">
+
+    <label class="form-label">Preferred Time Slot</label>
+    <div class="slot-grid" id="itrSlotGrid"></div>
+
+    <label class="form-label">Your Email</label>
+    <input type="email" class="form-input" id="itrEmail" placeholder="you@email.com">
+
+    <button class="modal-btn" onclick="submitItrTicket()">Book Slot (Free)</button>
+  </div>
+</div>
+
+<!-- ADVISORY FORM MODAL -->
+<div class="modal-overlay" id="advisoryModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('advisoryModal')">✕</button>
+    <div class="modal-title">Book a consultation date</div>
+
+    <label class="form-label">Preferred Date</label>
+    <input type="date" class="form-input" id="advisoryDate">
+
+    <label class="form-label">Your Email</label>
+    <input type="email" class="form-input" id="advisoryEmail" placeholder="you@email.com">
+
+    <div class="ticket-note">Time will be confirmed manually based on availability. Payment link will be shared after your consultation, based on the scope discussed.</div>
+
+    <button class="modal-btn" onclick="submitAdvisoryTicket()">Request Consultation</button>
+  </div>
+</div>
+
+<!-- TICKET RESULT MODAL -->
+<div class="modal-overlay" id="resultModal">
+  <div class="modal-box ticket-result">
+    <button class="modal-close" onclick="closeModal('resultModal')">✕</button>
+    <div class="modal-title">You're booked!</div>
+    <div class="ticket-number" id="resultTicketNumber">TKT-XXXXX</div>
+    <div class="ticket-note" id="resultNote">We'll send your Google Meet link to your email shortly.</div>
+    <button class="modal-btn" id="resultPayBtn" style="display:none;" onclick="payNow()">Pay Now</button>
+  </div>
+</div>
 
 <script>
-document.getElementById('testPayBtn').addEventListener('click', async () => {
-  const res = await fetch('/api/create-order', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ amount: 1, ticketId: 'TEST-' + Date.now() })
-  });
-  const order = await res.json();
+  const RAZORPAY_KEY_ID = 'PASTE_YOUR_RAZORPAY_KEY_ID_HERE'; // public key only
 
-  const options = {
-    key: 'rzp_test_T9snmVzD2zDrva', // public key, safe in frontend
-    amount: order.amount,
-    currency: order.currency,
-    name: 'filethisitr.com',
-    description: 'Test Payment',
-    order_id: order.id,
-    handler: async function (response) {
-      const verifyRes = await fetch('/api/verify-payment', {
+  function generateSlots() {
+    const slots = [];
+    for (let h = 10; h < 18; h++) {
+      slots.push(`${h}:00`);
+      slots.push(`${h}:30`);
+    }
+    return slots;
+  }
+
+  let selectedItrSlot = null;
+  let currentTicket = null;
+
+  function openModal(id) {
+    document.getElementById(id).classList.add('show');
+    if (id === 'itrModal' && document.getElementById('itrSlotGrid').children.length === 0) {
+      const grid = document.getElementById('itrSlotGrid');
+      generateSlots().forEach(time => {
+        const btn = document.createElement('div');
+        btn.className = 'slot-btn';
+        btn.textContent = time;
+        btn.onclick = () => {
+          document.querySelectorAll('#itrSlotGrid .slot-btn').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          selectedItrSlot = time;
+        };
+        grid.appendChild(btn);
+      });
+    }
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('show');
+  }
+
+  function updateItrPrice() {}
+
+  async function submitItrTicket() {
+    const formType = document.getElementById('itrFormType');
+    const price = formType.options[formType.selectedIndex].getAttribute('data-price');
+    const date = document.getElementById('itrDate').value;
+    const email = document.getElementById('itrEmail').value;
+
+    if (!date || !selectedItrSlot || !email) {
+      alert('Please fill in date, time slot, and email.');
+      return;
+    }
+
+    const slot_datetime = `${date}T${selectedItrSlot}:00`;
+
+    try {
+      const res = await fetch('/api/create-ticket', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(response)
+        body: JSON.stringify({
+          service_type: 'itr',
+          user_email: email,
+          itr_form_type: formType.value,
+          slot_datetime,
+          amount: parseFloat(price)
+        })
       });
-      const result = await verifyRes.json();
-      if (result.verified) {
-        alert('Payment verified successfully!');
-      } else {
-        alert('Payment verification failed.');
-      }
-    },
-    theme: { color: '#e8b84b' }
-  };
+      const ticket = await res.json();
+      if (ticket.error) throw new Error(ticket.error);
 
-  const rzp = new Razorpay(options);
-  rzp.open();
-});
+      currentTicket = ticket;
+      closeModal('itrModal');
+      document.getElementById('resultTicketNumber').textContent = ticket.ticket_number;
+      document.getElementById('resultNote').textContent =
+        `Your slot is booked for ${date} at ${selectedItrSlot}. We'll email your Google Meet link to ${email} shortly. You can pay anytime using the button below.`;
+      document.getElementById('resultPayBtn').style.display = 'block';
+      openModal('resultModal');
+    } catch (err) {
+      alert('Something went wrong creating your ticket. Please try again.');
+      console.error(err);
+    }
+  }
+
+  async function submitAdvisoryTicket() {
+    const date = document.getElementById('advisoryDate').value;
+    const email = document.getElementById('advisoryEmail').value;
+
+    if (!date || !email) {
+      alert('Please fill in date and email.');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/create-ticket', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          service_type: 'advisory',
+          user_email: email,
+          preferred_date: date
+        })
+      });
+      const ticket = await res.json();
+      if (ticket.error) throw new Error(ticket.error);
+
+      currentTicket = ticket;
+      closeModal('advisoryModal');
+      document.getElementById('resultTicketNumber').textContent = ticket.ticket_number;
+      document.getElementById('resultNote').textContent =
+        `We'll confirm a time for ${date} and email your Google Meet link to ${email}. Payment link will be shared after your consultation.`;
+      document.getElementById('resultPayBtn').style.display = 'none';
+      openModal('resultModal');
+    } catch (err) {
+      alert('Something went wrong creating your ticket. Please try again.');
+      console.error(err);
+    }
+  }
+
+  async function payNow() {
+    if (!currentTicket) return;
+
+    const res = await fetch('/api/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: currentTicket.amount, ticketId: currentTicket.ticket_number })
+    });
+    const order = await res.json();
+
+    const options = {
+      key: RAZORPAY_KEY_ID,
+      amount: order.amount,
+      currency: order.currency,
+      name: 'filethisitr.com',
+      description: `Payment for ${currentTicket.ticket_number}`,
+      order_id: order.id,
+      handler: async function (response) {
+        const verifyRes = await fetch('/api/verify-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(response)
+        });
+        const result = await verifyRes.json();
+        if (result.verified) {
+          alert('Payment verified successfully!');
+        } else {
+          alert('Payment verification failed.');
+        }
+      },
+      theme: { color: '#e8b84b' }
+    };
+
+    const rzp = new Razorpay(options);
+    rzp.open();
+  }
 </script>
 </body>
 </html>
