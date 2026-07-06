@@ -1,1 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — filethisitr.com</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Montserrat:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --gold: #e8b84b; --gold-dim: rgba(232,184,75,0.2); --gold-mid: rgba(232,184,75,0.5);
+    --bg: #0a0a0a; --text: #e8dcc0; --text-muted: rgba(232,220,192,0.45);
+  }
+  body {
+    background: var(--bg); color: var(--text); font-family: 'Montserrat', sans-serif;
+    min-height: 100vh; padding: 2rem;
+  }
+  .wordmark {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 300;
+    color: var(--gold); font-size: 1.6rem; margin-bottom: 2rem; text-align: center;
+  }
+  .login-box {
+    max-width: 320px; margin: 4rem auto; text-align: center;
+  }
+  .login-input {
+    width: 100%; background: rgba(255,255,255,0.03); border: 0.5px solid var(--gold-dim);
+    border-radius: 2px; padding: 0.9rem 1.2rem; color: var(--text);
+    font-family: 'Montserrat', sans-serif; font-size: 0.85rem; margin-bottom: 1rem; outline: none;
+  }
+  .login-input:focus { border-color: var(--gold-mid); }
+  .btn {
+    background: var(--gold); color: #0a0a0a; border: none; padding: 0.8rem 1.4rem;
+    border-radius: 2px; font-family: 'Montserrat', sans-serif; font-size: 0.75rem;
+    letter-spacing: 0.05em; cursor: pointer; width: 100%;
+  }
+  .dashboard { display: none; max-width: 1100px; margin: 0 auto; }
+  .dashboard.show { display: block; }
+  .login-box.hide { display: none; }
 
+  table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+  th, td {
+    border-bottom: 0.5px solid var(--gold-dim); padding: 0.7rem 0.6rem; text-align: left;
+    vertical-align: top;
+  }
+  th {
+    color: var(--gold); font-family: 'Cormorant Garamond', serif; font-size: 0.9rem;
+    font-weight: 400; font-style: italic;
+  }
+  td { color: var(--text); }
+  .muted { color: var(--text-muted); font-size: 0.65rem; }
+  .small-input {
+    background: rgba(255,255,255,0.03); border: 0.5px solid var(--gold-dim);
+    border-radius: 2px; padding: 0.4rem 0.6rem; color: var(--text);
+    font-family: 'Montserrat', sans-serif; font-size: 0.72rem; width: 80px;
+  }
+  .small-btn {
+    background: none; border: 0.5px solid var(--gold-dim); color: var(--text-muted);
+    padding: 0.35rem 0.6rem; border-radius: 2px; font-size: 0.65rem; cursor: pointer;
+    margin: 0.15rem 0.15rem 0 0;
+  }
+  .small-btn:hover { border-color: var(--gold-mid); color: var(--gold); }
+  .small-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(232,184,75,0.08); }
+  .status-tag {
+    font-size: 0.62rem; letter-spacing: 0.06em; text-transform: uppercase; padding: 0.2rem 0.5rem;
+    border-radius: 2px; border: 0.5px solid var(--gold-dim); color: var(--text-muted);
+  }
+  .refresh-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; }
+  .refresh-btn {
+    background: none; border: 0.5px solid var(--gold-dim); color: var(--text-muted);
+    padding: 0.5rem 1rem; border-radius: 2px; font-size: 0.7rem; cursor: pointer;
+  }
+  .refresh-btn:hover { border-color: var(--gold-mid); color: var(--gold); }
+</style>
+</head>
+<body>
+
+<div class="wordmark">filethisitr.com — Admin</div>
+
+<div class="login-box" id="loginBox">
+  <input type="password" class="login-input" id="passwordInput" placeholder="Admin password">
+  <button class="btn" onclick="login()">Login</button>
+</div>
+
+<div class="dashboard" id="dashboard">
+  <div class="refresh-bar">
+    <span class="muted" id="ticketCount"></span>
+    <button class="refresh-btn" onclick="loadTickets()">↻ Refresh</button>
+  </div>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>Ticket</th>
+          <th>Service</th>
+          <th>Email</th>
+          <th>Date / Slot</th>
+          <th>Amount (₹)</th>
+          <th>Meet Sent</th>
+          <th>Payment</th>
+          <th>Created</th>
+        </tr>
+      </thead>
+      <tbody id="ticketRows"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  let adminToken = null;
+
+  async function login() {
+    const password = document.getElementById('passwordInput').value;
+    if (!password) return;
+
+    try {
+      const res = await fetch('/api/admin-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+      const data = await res.json();
+      if (data.token) {
+        adminToken = data.token;
+        sessionStorage.setItem('adminToken', data.token);
+        document.getElementById('loginBox').classList.add('hide');
+        document.getElementById('dashboard').classList.add('show');
+        loadTickets();
+      } else {
+        alert('Incorrect password');
+      }
+    } catch (err) {
+      alert('Login failed. Try again.');
+      console.error(err);
+    }
+  }
+
+  async function loadTickets() {
+    try {
+      const res = await fetch('/api/get-tickets', {
+        headers: { 'x-admin-token': adminToken }
+      });
+      const tickets = await res.json();
+      if (!Array.isArray(tickets)) throw new Error(tickets.error || 'Failed to load');
+
+      document.getElementById('ticketCount').textContent = `${tickets.length} ticket(s)`;
+
+      const rows = tickets.map(t => {
+        const dateOrSlot = t.service_type === 'itr'
+          ? (t.slot_datetime ? new Date(t.slot_datetime).toLocaleString() : '—')
+          : (t.preferred_date || '—');
+
+        const amountCell = t.service_type === 'advisory'
+          ? `<input type="number" class="small-input" id="amt-${t.id}" placeholder="Set ₹" value="${t.amount || ''}">
+             <button class="small-btn" onclick="saveAmount('${t.id}')">Save</button>`
+          : `₹${t.amount || 0}`;
+
+        return `
+          <tr>
+            <td>${t.ticket_number}</td>
+            <td>${t.service_type === 'itr' ? 'ITR — ' + (t.itr_form_type || '') : 'Advisory'}</td>
+            <td>${t.user_email}</td>
+            <td>${dateOrSlot}</td>
+            <td>${amountCell}</td>
+            <td>
+              <button class="small-btn ${t.meet_sent ? 'active' : ''}" onclick="toggleMeetSent('${t.id}', ${!t.meet_sent})">
+                ${t.meet_sent ? '✓ Sent' : 'Mark Sent'}
+              </button>
+            </td>
+            <td>
+              <span class="status-tag">${t.payment_status}</span><br>
+              <button class="small-btn" onclick="setPaymentStatus('${t.id}', 'link_sent')">Link Sent</button>
+              <button class="small-btn" onclick="setPaymentStatus('${t.id}', 'paid')">Paid</button>
+            </td>
+            <td class="muted">${new Date(t.created_at).toLocaleDateString()}</td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('ticketRows').innerHTML = rows;
+    } catch (err) {
+      alert('Could not load tickets.');
+      console.error(err);
+    }
+  }
+
+  async function updateTicket(payload) {
+    const res = await fetch('/api/update-ticket', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-token': adminToken },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.error) {
+      alert('Update failed.');
+      console.error(data.error);
+    } else {
+      loadTickets();
+    }
+  }
+
+  function saveAmount(ticketId) {
+    const value = document.getElementById(`amt-${ticketId}`).value;
+    if (!value) return;
+    updateTicket({ ticket_id: ticketId, amount: parseFloat(value) });
+  }
+
+  function toggleMeetSent(ticketId, newValue) {
+    updateTicket({ ticket_id: ticketId, meet_sent: newValue });
+  }
+
+  function setPaymentStatus(ticketId, status) {
+    updateTicket({ ticket_id: ticketId, payment_status: status });
+  }
+
+  // Restore session if already logged in this browser session
+  window.addEventListener('DOMContentLoaded', () => {
+    const saved = sessionStorage.getItem('adminToken');
+    if (saved) {
+      adminToken = saved;
+      document.getElementById('loginBox').classList.add('hide');
+      document.getElementById('dashboard').classList.add('show');
+      loadTickets();
+    }
+  });
+</script>
+</body>
+</html>
