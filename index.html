@@ -572,6 +572,30 @@
 <div class="toast" id="toast">Full portal — coming soon!</div>
 
 <script>
+ const supabaseClient = window.supabase.createClient(
+  'https://unwrvqvbyhabgbxsmuxz.supabase.co',
+  'sb_publishable_ZKuG4mCAlDQlIM7pvm596Q_GZvsVEjp'
+);
+
+async function signInWithGoogle() {
+  const { error } = await supabaseClient.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin + '/dashboard.html' }
+  });
+  if (error) {
+    alert('Login failed. Please try again.');
+    console.error(error);
+  }
+}
+
+// If already logged in, skip straight to dashboard
+window.addEventListener('DOMContentLoaded', async () => {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session) {
+    window.location.href = '/dashboard.html';
+  }
+});
+ 
   const WHATSAPP_NUMBER = '918307797718';
   let currentMode = null; // 'guest' or 'login'
 
