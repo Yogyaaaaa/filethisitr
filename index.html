@@ -437,12 +437,12 @@
     <div class="home-cards">
       <div class="home-card" onclick="enterFlow('guest')">
         <div class="home-card-title">Guest Login</div>
-        <div class="home-card-sub">Quick & casual · Connects via WhatsApp</div>
+        <div class="home-card-sub">Quick · Connects via WhatsApp</div>
         <span class="arrow">→</span>
       </div>
       <div class="home-card" onclick="showPage('loginPage')">
         <div class="home-card-title">Login</div>
-        <div class="home-card-sub">Email or Google · Full case tracking on site</div>
+        <div class="home-card-sub">Login with Google Account</div>
         <span class="arrow">→</span>
       </div>
     </div>
@@ -470,7 +470,7 @@
 <!-- SERVICE SELECTION (shared for both Guest and Login — content adjusts via mode) -->
 <div class="page" id="servicePage">
   <div class="inner-page">
-    <div class="page-title" id="serviceTitle">How can we help?</div>
+    <div class="page-title" id="serviceTitle">How can I help you?</div>
     <div class="page-hint" id="serviceHint">Choose the service you need.</div>
     <div class="service-options">
       <div class="service-card" onclick="selectService('advisory')">
@@ -491,7 +491,7 @@
 <div class="page" id="guestAdvisoryPage">
   <div class="inner-page">
     <div class="page-title">Help me on taxes</div>
-    <div class="page-hint">Select your category — we'll open a pre-filled WhatsApp message<br>so our expert knows exactly how to help you.</div>
+    <div class="page-hint">Select your category — we'll open a pre-filled WhatsApp message<br>so our I know exactly how to help you.</div>
     <div class="options">
       <a class="option-card" href="#" data-msg="Hi, I need tax advisory for a Salaried Individual.">
         <div class="opt-number">01</div>
@@ -546,7 +546,7 @@
       <a class="service-card" href="#" id="guestItrWhatsapp">
         <div class="service-icon">💬</div>
         <div class="service-title">Continue on WhatsApp</div>
-        <div class="service-sub">Instant connect · Quick process · No login needed</div>
+        <div class="service-sub">Instant connect · No login needed</div>
       </a>
     </div>
   </div>
@@ -617,10 +617,10 @@ window.addEventListener('DOMContentLoaded', async () => {
     const title = document.getElementById('serviceTitle');
     const hint = document.getElementById('serviceHint');
     if (mode === 'guest') {
-      title.textContent = 'How can we help?';
+      title.textContent = 'How can I help you?';
       hint.textContent = "You're continuing as a guest — this will connect you on WhatsApp.";
     } else {
-      title.textContent = 'How can we help?';
+      title.textContent = 'How can I help you?';
       hint.textContent = "You're signed in — everything from here happens on this website.";
     }
     showPage('servicePage');
