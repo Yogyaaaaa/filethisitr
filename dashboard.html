@@ -479,6 +479,71 @@
     const rzp = new Razorpay(options);
     rzp.open();
   }
+let activeTicketId = null;
+let chatPollInterval = null;
+
+function openChat(ticketRowId, ticketLabel) {
+  activeTicketId = ticketRowId;
+  document.getElementById('chatTicketTitle').textContent = ticketLabel;
+  document.getElementById('chatModal').classList.add('show');
+  loadMessages();
+  chatPollInterval = setInterval(loadMessages, 4000);
+}
+
+function closeChatModal() {
+  document.getElementById('chatModal').classList.remove('show');
+  clearInterval(chatPollInterval);
+  activeTicketId = null;
+}
+
+async function loadMessages() {
+  if (!activeTicketId) return;
+  const { data, error } = await supabaseClient
+    .from('messages')
+    .select('*')
+    .eq('ticket_id', activeTicketId)
+    .order('created_at', { ascending: true });
+
+  if (error) { console.error(error); return; }
+
+  const box = document.getElementById('chatMessages');
+  box.innerHTML = data.map(m => `
+    <div class="msg-bubble ${m.sender === 'user' ? 'msg-user' : 'msg-admin'}">
+      ${m.message}
+      <div class="msg-time">${new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+    </div>
+  `).join('');
+  box.scrollTop = box.scrollHeight;
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text || !activeTicketId) return;
+
+  const { error } = await supabaseClient.from('messages').insert([{
+    ticket_id: activeTicketId,
+    sender: 'user',
+    message: text
+  }]);
+
+  if (error) { console.error(error); return; }
+  input.value = '';
+  loadMessages();
+}
 </script>
+<div class="chat-modal-overlay" id="chatModal">
+  <div class="chat-box">
+    <div class="chat-header">
+      <div class="chat-header-title" id="chatTicketTitle">Ticket</div>
+      <button class="logout-btn" style="width:auto;padding:0.3rem 0.7rem;" onclick="closeChatModal()">✕</button>
+    </div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="chat-input-row">
+      <input type="text" class="chat-input" id="chatInput" placeholder="Type a message..." onkeypress="if(event.key==='Enter') sendMessage()">
+      <button class="chat-send-btn" onclick="sendMessage()">➤</button>
+    </div>
+  </div>
+</div> 
 </body>
 </html>
