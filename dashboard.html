@@ -334,7 +334,7 @@
         ? `<button class="pay-btn" onclick="payForTicket('${t.id}')">Pay ₹${t.amount}</button>` : '';
 
       return `
-        <div class="ticket-item">
+        <div class="ticket-item" onclick="openChat('${t.id}', '${t.ticket_number}')" style="cursor:pointer;">
           <div class="ticket-left">
             <div class="ticket-service">${serviceLabel}</div>
             <div class="ticket-meta">${t.ticket_number} · ${dateOrSlot}${t.meet_sent ? ' · Meet link sent ✓' : ''}</div>
