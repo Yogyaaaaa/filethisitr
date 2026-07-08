@@ -126,6 +126,28 @@
     align-items: center; justify-content: center; color: var(--text-muted);
     font-size: 0.8rem; z-index: 999;
   }
+.chat-modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+  display: none; align-items: center; justify-content: center; z-index: 300; padding: 1.5rem;
+}
+.chat-modal-overlay.show { display: flex; }
+.chat-box {
+  background: #0f0f0f; border: 0.5px solid rgba(232,184,75,0.3); border-radius: 4px;
+  width: 100%; max-width: 480px; height: 600px; display: flex; flex-direction: column;
+}
+.chat-header {
+  padding: 1rem 1.4rem; border-bottom: 0.5px solid rgba(232,184,75,0.2);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.chat-header-title { font-family: 'Cormorant Garamond', serif; font-style: italic; color: var(--gold); font-size: 1.05rem; }
+.chat-messages { flex: 1; overflow-y: auto; padding: 1rem 1.2rem; display: flex; flex-direction: column; gap: 0.6rem; }
+.msg-bubble { max-width: 75%; padding: 0.6rem 0.9rem; border-radius: 10px; font-size: 0.78rem; line-height: 1.4; }
+.msg-user { align-self: flex-end; background: rgba(232,184,75,0.15); color: var(--text); border-bottom-right-radius: 2px; }
+.msg-admin { align-self: flex-start; background: rgba(255,255,255,0.05); color: var(--text); border-bottom-left-radius: 2px; }
+.msg-time { font-size: 0.58rem; color: var(--text-muted); margin-top: 0.2rem; }
+.chat-input-row { display: flex; gap: 0.5rem; padding: 1rem; border-top: 0.5px solid rgba(232,184,75,0.2); }
+.chat-input { flex: 1; background: rgba(255,255,255,0.03); border: 0.5px solid var(--gold-dim); border-radius: 20px; padding: 0.6rem 1rem; color: var(--text); font-size: 0.78rem; outline: none; }
+.chat-send-btn { background: var(--gold); color: #0a0a0a; border: none; border-radius: 50%; width: 38px; height: 38px; cursor: pointer; font-size: 0.9rem; }
 </style>
 </head>
 <body>
