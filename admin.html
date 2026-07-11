@@ -203,7 +203,9 @@
               <button class="small-btn" onclick="setPaymentStatus('${t.id}', 'link_sent')">Link Sent</button>
               <button class="small-btn" onclick="setPaymentStatus('${t.id}', 'paid')">Paid</button>
             </td>
-            <td class="muted">${new Date(t.created_at).toLocaleDateString()}</td>
+          <td class="muted">${new Date(t.created_at).toLocaleDateString()}<br>
+  <button class="small-btn" onclick="openChat('${t.id}', '${t.ticket_number}')">💬 Chat</button>
+</td>
           </tr>
         `;
       }).join('');
