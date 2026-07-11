@@ -217,16 +217,16 @@
   </div>
 
   <!-- UPLOAD DOCUMENTS -->
-  <div class="view" id="uploadView">
-    <div class="view-title">Upload Documents</div>
-    <div class="view-hint">Attach documents (Form 16, PAN, etc.) to a ticket. Select a ticket first.</div>
-    <select class="form-select" id="uploadTicketSelect" style="max-width:380px;"></select>
-    <div class="upload-box" onclick="document.getElementById('fileInput').click()">
-      Click to select a file, or drag it here.<br>(Storage wiring is a next step — this is the interface preview.)
-    </div>
-    <input type="file" id="fileInput" style="display:none;">
-    <div id="fileList"></div>
+ <div class="view" id="uploadView">
+  <div class="view-title">Upload Documents</div>
+  <div class="view-hint">Attach documents (Form 16, PAN, etc.) to a ticket.</div>
+  <select class="form-select" id="uploadTicketSelect" style="max-width:380px;"></select>
+  <div class="upload-box" onclick="document.getElementById('fileInput').click()">
+    Click to select a file, or drag it here.
   </div>
+  <input type="file" id="fileInput" style="display:none;">
+  <div id="fileList"></div>
+</div>
 
   <!-- PAYMENTS -->
   <div class="view" id="paymentsView">
@@ -406,20 +406,57 @@
   }
 
   function populateUploadTicketSelect() {
-    const select = document.getElementById('uploadTicketSelect');
-    select.innerHTML = myTickets.map(t => `<option value="${t.id}">${t.ticket_number} — ${t.service_type}</option>`).join('')
-      || '<option disabled>No tickets yet</option>';
+  const select = document.getElementById('uploadTicketSelect');
+  select.innerHTML = myTickets.map(t => `<option value="${t.id}">${t.ticket_number} — ${t.service_type}</option>`).join('')
+    || '<option disabled>No tickets yet</option>';
+  if (myTickets.length > 0) loadFilesForTicket(select.value);
+  select.onchange = () => loadFilesForTicket(select.value);
+}
+
+document.getElementById('fileInput').addEventListener('change', async function() {
+  const file = this.files[0];
+  const ticketId = document.getElementById('uploadTicketSelect').value;
+  if (!file || !ticketId) return;
+
+  const filePath = `${currentUser.id}/${ticketId}/${Date.now()}_${file.name}`;
+
+  const { error } = await supabaseClient.storage.from('documents').upload(filePath, file);
+
+  if (error) {
+    alert('Upload failed. Please try again.');
+    console.error(error);
+    return;
   }
 
-  document.getElementById('fileInput').addEventListener('change', function() {
-    if (this.files.length > 0) {
-      const item = document.createElement('div');
-      item.className = 'file-item';
-      item.textContent = `📎 ${this.files[0].name} (upload storage wiring pending)`;
-      document.getElementById('fileList').prepend(item);
-    }
-  });
+  loadFilesForTicket(ticketId);
+  this.value = '';
+});
 
+async function loadFilesForTicket(ticketId) {
+  const list = document.getElementById('fileList');
+  list.innerHTML = 'Loading files...';
+
+  const { data, error } = await supabaseClient.storage
+    .from('documents')
+    .list(`${currentUser.id}/${ticketId}`);
+
+  if (error) {
+    list.innerHTML = '';
+    console.error(error);
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    list.innerHTML = '<div class="empty-state">No documents uploaded yet.</div>';
+    return;
+  }
+
+  list.innerHTML = data.map(f => {
+    const displayName = f.name.replace(/^\d+_/, '');
+    return `<div class="file-item">📎 ${displayName}</div>`;
+  }).join('');
+}
+ 
   function renderPayments() {
     const list = document.getElementById('paymentsList');
     const payable = myTickets.filter(t => t.amount && t.payment_status !== 'paid');
