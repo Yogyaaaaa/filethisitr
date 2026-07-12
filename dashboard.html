@@ -157,7 +157,7 @@
 <div class="sidebar" style="display:none;" id="sidebar">
   <div class="sidebar-logo">filethisitr.com</div>
   <div class="nav-item active" data-view="ticketsView" onclick="switchView('ticketsView', this)">
-    <span class="nav-icon">💬</span> My Tickets
+    <span class="nav-icon">💬</span> My Bookings
   </div>
   <div class="nav-item" data-view="bookView" onclick="switchView('bookView', this)">
     <span class="nav-icon">📅</span> Book a Slot
@@ -176,7 +176,7 @@
 
 <div class="main" style="display:none;" id="mainArea">
 
-  <!-- MY TICKETS -->
+  <!-- MY BOOKINGS -->
   <div class="view active" id="ticketsView">
     <div class="view-title">My Tickets</div>
     <div class="view-hint">All your requests and their current status, in one place.</div>
@@ -502,7 +502,7 @@ async function loadFilesForTicket(ticketId) {
         const result = await verifyRes.json();
         if (result.verified) {
           alert('Payment successful!');
-          await loadMyTickets();
+          await loadMyBookings();
           renderPayments();
         } else {
           alert('Payment verification failed.');
