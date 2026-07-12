@@ -359,7 +359,6 @@
     }
 
     const { error } = await supabaseClient.from('tickets').insert([{
-      ticket_number: 'TKT-' + Date.now().toString(36).toUpperCase(),
       service_type: 'itr',
       user_id: currentUser.id,
       user_email: currentUser.email,
@@ -387,7 +386,6 @@
     }
 
     const { error } = await supabaseClient.from('tickets').insert([{
-      ticket_number: 'TKT-' + Date.now().toString(36).toUpperCase(),
       service_type: 'advisory',
       user_id: currentUser.id,
       user_email: currentUser.email,
