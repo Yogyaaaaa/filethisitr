@@ -502,7 +502,7 @@ async function loadFilesForTicket(ticketId) {
         const result = await verifyRes.json();
         if (result.verified) {
           alert('Payment successful!');
-          await loadMyBookings();
+          await loadMyTickets();
           renderPayments();
         } else {
           alert('Payment verification failed.');
