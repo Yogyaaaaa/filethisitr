@@ -581,17 +581,25 @@ window.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  google.accounts.id.initialize({
-    client_id: GOOGLE_CLIENT_ID,
-    callback: handleGoogleSignIn
-  });
-
-  google.accounts.id.renderButton(
-    document.getElementById('googleSignInButton'),
-    { theme: 'filled_black', size: 'large', shape: 'pill', text: 'continue_with' }
-  );
+  waitForGoogleAndRender();
 });
 
+function waitForGoogleAndRender() {
+  if (window.google && google.accounts && google.accounts.id) {
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: handleGoogleSignIn
+    });
+
+    google.accounts.id.renderButton(
+      document.getElementById('googleSignInButton'),
+      { theme: 'filled_black', size: 'large', shape: 'pill', text: 'continue_with' }
+    );
+  } else {
+    // Google's script isn't ready yet — check again shortly
+    setTimeout(waitForGoogleAndRender, 100);
+  }
+}
 async function handleGoogleSignIn(response) {
   const { data, error } = await supabaseClient.auth.signInWithIdToken({
     provider: 'google',
