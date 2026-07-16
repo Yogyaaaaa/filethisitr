@@ -87,6 +87,22 @@
     opacity: 0;
   }
 
+ .site-footer {
+  position: fixed;
+  bottom: 1.2rem;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-weight: 300;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+  z-index: 5;
+  pointer-events: none;
+}
+
   /* BACK BUTTON */
   .back-btn {
     position: fixed;
@@ -945,5 +961,6 @@ async function handleGoogleSignIn(response) {
     rzp.open();
   }
 </script>
+<div class="site-footer">by the guy you can rely upon...</div>
 </body>
 </html>
