@@ -156,18 +156,27 @@
 
 <div class="sidebar" style="display:none;" id="sidebar">
   <div class="sidebar-logo">filethisitr.com</div>
-  <div class="nav-item active" data-view="ticketsView" onclick="switchView('ticketsView', this)">
-    <span class="nav-icon">💬</span> My Bookings
-  </div>
-  <div class="nav-item" data-view="bookView" onclick="switchView('bookView', this)">
-    <span class="nav-icon">📅</span> Book a Slot
-  </div>
-  <div class="nav-item" data-view="uploadView" onclick="switchView('uploadView', this)">
-    <span class="nav-icon">📎</span> Upload Documents
-  </div>
-  <div class="nav-item" data-view="paymentsView" onclick="switchView('paymentsView', this)">
-    <span class="nav-icon">💳</span> Payments
-  </div>
+  <div class="nav-item active" data-view="welcomeView" onclick="switchView('welcomeView', this)">
+  <span class="nav-icon">👋</span> Welcome
+</div>
+<div class="nav-item" data-view="whichFormView" onclick="switchView('whichFormView', this)">
+  <span class="nav-icon">❓</span> Which Form?
+</div>
+<div class="nav-item" data-view="ticketsView" onclick="switchView('ticketsView', this)">
+  <span class="nav-icon">💬</span> My Bookings
+</div>
+<div class="nav-item" data-view="bookView" onclick="switchView('bookView', this)">
+  <span class="nav-icon">📅</span> Book a Slot
+</div>
+<div class="nav-item" data-view="uploadView" onclick="switchView('uploadView', this)">
+  <span class="nav-icon">📎</span> Upload Documents
+</div>
+<div class="nav-item" data-view="paymentsView" onclick="switchView('paymentsView', this)">
+  <span class="nav-icon">💳</span> Payments
+</div>
+<div class="nav-item" data-view="whatsappView" onclick="switchView('whatsappView', this)">
+  <span class="nav-icon">💬</span> Alternate: WhatsApp
+</div>  </div>
   <div class="sidebar-bottom">
     <div class="user-email" id="userEmail"></div>
     <button class="logout-btn" onclick="logout()">Log out</button>
