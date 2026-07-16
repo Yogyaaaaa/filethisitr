@@ -227,36 +227,42 @@
 <!-- WHICH FORM? -->
 <div class="view" id="whichFormView">
   <div class="view-title">Which Form?</div>
-  <div class="view-hint">A quick guide to help you identify your ITR form.</div>
+  <div class="view-hint">Answer a few quick questions — final confirmation still happens with us in chat.</div>
 
-  <div style="display:flex; flex-direction:column; gap:1rem; max-width:600px;">
-    <div class="ticket-item" style="cursor:default;">
-      <div class="ticket-left">
-        <div class="ticket-service">ITR-1 (Sahaj)</div>
-        <div class="ticket-meta">Salaried individual, one house property, income under ₹50L, no capital gains.</div>
-      </div>
+  <div id="quizContainer" style="max-width:500px;">
+
+    <div class="quiz-slide active" id="quizQ1">
+      <div class="ticket-service" style="margin-bottom:1rem;">Do you have income from a business or profession?</div>
+      <button class="toggle-btn" onclick="quizAnswer('q1', 'yes')">Yes</button>
+      <button class="toggle-btn" onclick="quizAnswer('q1', 'no')">No</button>
     </div>
-    <div class="ticket-item" style="cursor:default;">
-      <div class="ticket-left">
-        <div class="ticket-service">ITR-2</div>
-        <div class="ticket-meta">Capital gains, multiple house properties, foreign assets/income, no business income.</div>
-      </div>
+
+    <div class="quiz-slide" id="quizQ2" style="display:none;">
+      <div class="ticket-service" style="margin-bottom:1rem;">Do you file under the presumptive taxation scheme (Section 44AD / 44ADA)?</div>
+      <div class="view-hint" style="margin-bottom:1rem;">This applies if your accountant/previous filer mentioned "presumptive income" — common for small businesses/freelancers with turnover under the prescribed limit.</div>
+      <button class="toggle-btn" onclick="quizAnswer('q2', 'yes')">Yes</button>
+      <button class="toggle-btn" onclick="quizAnswer('q2', 'no')">No</button>
     </div>
-    <div class="ticket-item" style="cursor:default;">
-      <div class="ticket-left">
-        <div class="ticket-service">ITR-3</div>
-        <div class="ticket-meta">Business or professional income (proprietorship).</div>
-      </div>
+
+    <div class="quiz-slide" id="quizQ3" style="display:none;">
+      <div class="ticket-service" style="margin-bottom:1rem;">Do any of these apply to you?</div>
+      <div class="view-hint" style="margin-bottom:1rem;">Capital gains (property/stocks/mutual funds) · foreign income or assets · more than one house property · total income above ₹50 lakh</div>
+      <button class="toggle-btn" onclick="quizAnswer('q3', 'yes')">Yes, at least one applies</button>
+      <button class="toggle-btn" onclick="quizAnswer('q3', 'no')">No, none apply</button>
     </div>
-    <div class="ticket-item" style="cursor:default;">
-      <div class="ticket-left">
-        <div class="ticket-service">ITR-4 (Sugam)</div>
-        <div class="ticket-meta">Presumptive taxation scheme for small business/professional income.</div>
+
+    <div class="quiz-slide" id="quizResult" style="display:none;">
+      <div class="ticket-item" style="cursor:default;">
+        <div class="ticket-left">
+          <div class="ticket-service" id="quizResultForm">ITR-1</div>
+          <div class="ticket-meta" id="quizResultDesc">Based on your answers.</div>
+        </div>
       </div>
+      <button class="submit-btn" style="margin-top:1rem;" onclick="resetQuiz()">Start Over</button>
+      <button class="submit-btn" style="margin-top:1rem; margin-left:0.6rem;" onclick="goToBooking()">Book This Form →</button>
     </div>
+
   </div>
-
-  <div class="view-hint" style="margin-top:1.5rem;">Still unsure? Book a slot under "Help me on taxes" and we'll confirm together.</div>
 </div>
  
  <!-- MY BOOKINGS -->
@@ -369,6 +375,57 @@
     document.getElementById('itrForm').style.display = mode === 'itr' ? 'block' : 'none';
     document.getElementById('advisoryForm').style.display = mode === 'advisory' ? 'block' : 'none';
   }
+ const quizAnswers = {};
+
+function quizAnswer(question, value) {
+  quizAnswers[question] = value;
+
+  if (question === 'q1') {
+    document.getElementById('quizQ1').style.display = 'none';
+    if (value === 'yes') {
+      document.getElementById('quizQ2').style.display = 'block';
+    } else {
+      document.getElementById('quizQ3').style.display = 'block';
+    }
+  }
+
+  if (question === 'q2') {
+    document.getElementById('quizQ2').style.display = 'none';
+    showResult(value === 'yes' ? 'ITR-4' : 'ITR-3');
+  }
+
+  if (question === 'q3') {
+    document.getElementById('quizQ3').style.display = 'none';
+    showResult(value === 'yes' ? 'ITR-2' : 'ITR-1');
+  }
+}
+
+function showResult(form) {
+  const descriptions = {
+    'ITR-1': 'Sahaj — for salaried individuals with simple income, one house property, no capital gains.',
+    'ITR-2': 'For capital gains, foreign income/assets, multiple properties, or income above ₹50L.',
+    'ITR-3': 'For business or professional income (proprietorship), not under presumptive scheme.',
+    'ITR-4': 'Sugam — for small business/professional income under the presumptive taxation scheme.'
+  };
+  document.getElementById('quizResultForm').textContent = form;
+  document.getElementById('quizResultDesc').textContent = descriptions[form];
+  document.getElementById('quizResult').style.display = 'block';
+  document.getElementById('quizResult').dataset.form = form;
+}
+
+function resetQuiz() {
+  document.getElementById('quizResult').style.display = 'none';
+  document.getElementById('quizQ2').style.display = 'none';
+  document.getElementById('quizQ3').style.display = 'none';
+  document.getElementById('quizQ1').style.display = 'block';
+}
+
+function goToBooking() {
+  const form = document.getElementById('quizResult').dataset.form;
+  switchView('bookView', document.querySelector('[data-view="bookView"]'));
+  setBookMode('itr');
+  document.getElementById('itrFormType').value = form;
+}
 
   function buildSlotGrid() {
     const grid = document.getElementById('itrSlotGrid');
