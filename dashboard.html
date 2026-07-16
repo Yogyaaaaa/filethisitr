@@ -389,10 +389,10 @@
     <div id="itrForm">
       <label class="form-label">ITR Form Type</label>
       <select class="form-select" id="itrFormType">
-        <option value="ITR-1" data-price="499">ITR-1 (Sahaj) — ₹499</option>
-        <option value="ITR-2" data-price="999">ITR-2 — ₹999</option>
-        <option value="ITR-3" data-price="1499">ITR-3 — ₹1499</option>
-        <option value="ITR-4" data-price="999">ITR-4 (Sugam) — ₹999</option>
+        <option value="ITR-1">ITR-1 (Sahaj)</option>
+        <option value="ITR-2">ITR-2</option>
+        <option value="ITR-3">ITR-3</option>
+        <option value="ITR-4">ITR-4 (Sugam)</option>
       </select>
       <label class="form-label">Preferred Date</label>
       <input type="date" class="form-input" id="itrDate">
@@ -614,7 +614,6 @@ function goToBooking() {
 
   async function submitItrTicket() {
     const formType = document.getElementById('itrFormType');
-    const price = formType.options[formType.selectedIndex].getAttribute('data-price');
     const date = document.getElementById('itrDate').value;
 
     if (!date || !selectedItrSlot) {
@@ -628,7 +627,6 @@ function goToBooking() {
       user_email: currentUser.email,
       itr_form_type: formType.value,
       slot_datetime: `${date}T${selectedItrSlot}:00`,
-      amount: parseFloat(price),
       payment_status: 'unpaid'
     }]);
 
