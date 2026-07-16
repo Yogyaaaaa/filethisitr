@@ -205,7 +205,7 @@
           ? (t.slot_datetime ? new Date(t.slot_datetime).toLocaleString() : '—')
           : (t.preferred_date || '—');
 
-        const amountCell = t.service_type === 'advisory'
+        const amountCell = t.service_type === 'advisory' || t.service_type === 'itr')
           ? `<input type="number" class="small-input" id="amt-${t.id}" placeholder="Set ₹" value="${t.amount || ''}">
              <button class="small-btn" onclick="saveAmount('${t.id}')">Save</button>`
           : `₹${t.amount || 0}`;
