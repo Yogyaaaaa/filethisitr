@@ -178,6 +178,9 @@
 <div class="nav-item" data-view="whatsappView" onclick="switchView('whatsappView', this)">
   <span class="nav-icon">💬</span> Alternate: WhatsApp
 </div>
+ <div class="nav-item" data-view="calcView" onclick="switchView('calcView', this)">
+  <span class="nav-icon">🧮</span> Estimated Tax Payouts
+</div>
   <div class="sidebar-bottom">
     <div class="user-email" id="userEmail"></div>
     <button class="logout-btn" onclick="logout()">Log out</button>
@@ -430,6 +433,94 @@
   </a>
 </div>
 
+ <!-- Estimated Tax Payouts -->
+<div class="view" id="calcView">
+  <div class="view-title">Estimated Tax Payouts</div>
+  <div class="view-hint">Enter your income head-wise. This gives an estimate — final numbers may vary based on specifics we confirm in chat.</div>
+
+  <div style="max-width:600px;">
+
+    <label class="form-label">Residency Status</label>
+    <select class="form-select" id="calcResidency" onchange="toggleAgeField()">
+      <option value="resident">Resident (Ordinarily Resident)</option>
+      <option value="rnor">Resident but Not Ordinarily Resident (RNOR)</option>
+      <option value="nri">Non-Resident (NRI)</option>
+    </select>
+
+    <div id="ageFieldWrap">
+      <label class="form-label">Age Category</label>
+      <select class="form-select" id="calcAge">
+        <option value="below60">Below 60</option>
+        <option value="60to80">60 to 80 (Senior Citizen)</option>
+        <option value="above80">Above 80 (Super Senior Citizen)</option>
+      </select>
+    </div>
+
+    <label class="form-label">Tax Regime</label>
+    <select class="form-select" id="calcRegime" onchange="toggleDeductionField()">
+      <option value="new">New Regime</option>
+      <option value="old">Old Regime</option>
+    </select>
+
+    <div class="ticket-service" style="margin:1.2rem 0 0.6rem;">Slab-Rate Income Heads</div>
+
+    <label class="form-label">Salary Income (gross)</label>
+    <input type="number" class="form-input" id="calcSalary" placeholder="0">
+
+    <label class="form-label">House Property Income (net taxable)</label>
+    <input type="number" class="form-input" id="calcHouseProp" placeholder="0">
+
+    <label class="form-label">Business/Profession Income</label>
+    <input type="number" class="form-input" id="calcBusiness" placeholder="0">
+    <div style="margin-bottom:1.1rem;">
+      <label style="font-size:0.7rem; color:var(--text-muted);">
+        <input type="checkbox" id="calcPresumptive"> Under presumptive scheme (44AD/44ADA)
+      </label>
+      <div class="view-hint" style="margin-bottom:0; margin-top:0.3rem;">(Presumptive income is still taxed at slab rates — this only affects compliance, not the rate itself.)</div>
+    </div>
+
+    <label class="form-label">Other Sources (interest, etc. — slab rate)</label>
+    <input type="number" class="form-input" id="calcOtherSources" placeholder="0">
+
+    <label class="form-label">Lottery / Game Show Winnings (flat 30%)</label>
+    <input type="number" class="form-input" id="calcLottery" placeholder="0">
+
+    <div class="ticket-service" style="margin:1.2rem 0 0.6rem;">Capital Gains (Special Rates)</div>
+
+    <label class="form-label">Equity Shares/Mutual Funds — Short-Term (20%)</label>
+    <input type="number" class="form-input" id="calcEquitySTCG" placeholder="0">
+
+    <label class="form-label">Equity Shares/Mutual Funds — Long-Term (12.5%, ₹1.25L exempt)</label>
+    <input type="number" class="form-input" id="calcEquityLTCG" placeholder="0">
+
+    <label class="form-label">Debt Mutual Funds (taxed at slab rate)</label>
+    <input type="number" class="form-input" id="calcDebtFund" placeholder="0">
+
+    <label class="form-label">Property — Long-Term Capital Gains (12.5%)</label>
+    <input type="number" class="form-input" id="calcPropertyLTCG" placeholder="0">
+
+    <label class="form-label">Crypto / VDA Gains (flat 30%, no loss set-off)</label>
+    <input type="number" class="form-input" id="calcCrypto" placeholder="0">
+
+    <div id="deductionFieldWrap" style="display:none;">
+      <div class="ticket-service" style="margin:1.2rem 0 0.6rem;">Deductions (Old Regime Only)</div>
+      <label class="form-label">Total Deductions (80C, 80D, HRA, etc.)</label>
+      <input type="number" class="form-input" id="calcDeductions" placeholder="0">
+    </div>
+
+    <button class="submit-btn" onclick="calculateTax()">Calculate</button>
+
+    <div id="calcResult" style="display:none; margin-top:2rem;">
+      <div class="ticket-item" style="cursor:default; flex-direction:column; align-items:flex-start;">
+        <div class="ticket-service" style="margin-bottom:0.8rem;">Estimated Tax Breakdown</div>
+        <div id="calcBreakdown" style="font-size:0.78rem; line-height:1.9; color:var(--text);"></div>
+      </div>
+      <div class="view-hint" style="margin-top:1rem;">This is an estimate based on standard provisions. Book a slot with us to confirm exact figures, especially for surcharge marginal relief, indexation choices, or DTAA treaty benefits (for NRIs).</div>
+    </div>
+
+  </div>
+</div>
+
 </div>
 
 <script>
@@ -560,6 +651,172 @@ function goToBooking() {
       });
     }
   }
+
+ // ============ ESTIMATED TAX PAYOUTS LOGIC ============
+
+function toggleAgeField() {
+  const residency = document.getElementById('calcResidency').value;
+  document.getElementById('ageFieldWrap').style.display = residency === 'resident' ? 'block' : 'none';
+}
+
+function toggleDeductionField() {
+  const regime = document.getElementById('calcRegime').value;
+  document.getElementById('deductionFieldWrap').style.display = regime === 'old' ? 'block' : 'none';
+}
+
+// Slab tax calculation for New Regime (FY 2025-26)
+function slabTaxNewRegime(income) {
+  const slabs = [
+    [400000, 0], [800000, 0.05], [1200000, 0.10], [1600000, 0.15],
+    [2000000, 0.20], [2400000, 0.25], [Infinity, 0.30]
+  ];
+  let tax = 0, prev = 0;
+  for (const [limit, rate] of slabs) {
+    if (income > prev) {
+      tax += (Math.min(income, limit) - prev) * rate;
+      prev = limit;
+    } else break;
+  }
+  return tax;
+}
+
+// Slab tax calculation for Old Regime, based on age category
+function slabTaxOldRegime(income, ageCategory) {
+  let slabs;
+  if (ageCategory === 'above80') {
+    slabs = [[500000, 0], [1000000, 0.20], [Infinity, 0.30]];
+  } else if (ageCategory === '60to80') {
+    slabs = [[300000, 0], [500000, 0.05], [1000000, 0.20], [Infinity, 0.30]];
+  } else {
+    slabs = [[250000, 0], [500000, 0.05], [1000000, 0.20], [Infinity, 0.30]];
+  }
+  let tax = 0, prev = 0;
+  for (const [limit, rate] of slabs) {
+    if (income > prev) {
+      tax += (Math.min(income, limit) - prev) * rate;
+      prev = limit;
+    } else break;
+  }
+  return tax;
+}
+
+// Surcharge with simplified marginal relief
+function calculateSurcharge(totalIncome, taxBeforeSurcharge, regime, isSpecialRateCapped) {
+  let rate = 0;
+  if (totalIncome > 50000000) rate = (regime === 'new') ? 0.25 : 0.37;
+  else if (totalIncome > 20000000) rate = 0.25;
+  else if (totalIncome > 10000000) rate = 0.15;
+  else if (totalIncome > 5000000) rate = 0.10;
+  else return 0;
+
+  // Capital gains/dividend income surcharge is capped at 15% regardless of slab
+  if (isSpecialRateCapped && rate > 0.15) rate = 0.15;
+
+  let surcharge = taxBeforeSurcharge * rate;
+
+  // Simplified marginal relief: surcharge shouldn't cause total tax increase
+  // to exceed the income increase beyond the threshold crossed.
+  const thresholds = [5000000, 10000000, 20000000, 50000000];
+  for (const threshold of thresholds) {
+    if (totalIncome > threshold && totalIncome <= threshold * 1.5) {
+      const excessIncome = totalIncome - threshold;
+      const maxAllowedTax = taxBeforeSurcharge + excessIncome;
+      if (taxBeforeSurcharge + surcharge > maxAllowedTax) {
+        surcharge = Math.max(0, maxAllowedTax - taxBeforeSurcharge);
+      }
+      break;
+    }
+  }
+
+  return surcharge;
+}
+
+function calculateTax() {
+  const residency = document.getElementById('calcResidency').value;
+  const ageCategory = residency === 'resident' ? document.getElementById('calcAge').value : 'below60';
+  const regime = document.getElementById('calcRegime').value;
+
+  const salary = parseFloat(document.getElementById('calcSalary').value) || 0;
+  const houseProp = parseFloat(document.getElementById('calcHouseProp').value) || 0;
+  const business = parseFloat(document.getElementById('calcBusiness').value) || 0;
+  const otherSources = parseFloat(document.getElementById('calcOtherSources').value) || 0;
+  const lottery = parseFloat(document.getElementById('calcLottery').value) || 0;
+
+  const equitySTCG = parseFloat(document.getElementById('calcEquitySTCG').value) || 0;
+  const equityLTCG = parseFloat(document.getElementById('calcEquityLTCG').value) || 0;
+  const debtFund = parseFloat(document.getElementById('calcDebtFund').value) || 0;
+  const propertyLTCG = parseFloat(document.getElementById('calcPropertyLTCG').value) || 0;
+  const crypto = parseFloat(document.getElementById('calcCrypto').value) || 0;
+
+  const deductions = regime === 'old' ? (parseFloat(document.getElementById('calcDeductions').value) || 0) : 0;
+
+  // Standard deduction on salary
+  const standardDeduction = salary > 0 ? (regime === 'new' ? 75000 : 50000) : 0;
+
+  // Slab-taxed income: salary + house property + business + other sources + debt funds
+  let slabIncome = Math.max(0, salary - standardDeduction) + houseProp + business + otherSources + debtFund;
+  slabIncome = Math.max(0, slabIncome - deductions);
+
+  // Special-rate income
+  const equityLTCGTaxable = Math.max(0, equityLTCG - 125000);
+  const equityLTCGTax = equityLTCGTaxable * 0.125;
+  const equitySTCGTax = equitySTCG * 0.20;
+  const propertyLTCGTax = propertyLTCG * 0.125;
+  const cryptoTax = crypto * 0.30;
+  const lotteryTax = lottery * 0.30;
+
+  const specialRateTax = equityLTCGTax + equitySTCGTax + propertyLTCGTax + cryptoTax + lotteryTax;
+  const specialRateIncome = equitySTCG + equityLTCG + propertyLTCG + crypto + lottery;
+
+  // Slab tax on slab income
+  let slabTax = regime === 'new'
+    ? slabTaxNewRegime(slabIncome)
+    : slabTaxOldRegime(slabIncome, ageCategory);
+
+  const totalIncome = slabIncome + specialRateIncome;
+  let grossTax = slabTax + specialRateTax;
+
+  // Section 87A Rebate — only for Residents (not NRI/RNOR), only on slab income tax portion
+  let rebate = 0;
+  if (residency === 'resident') {
+    if (regime === 'new' && totalIncome <= 1200000) {
+      rebate = Math.min(slabTax, 60000);
+    } else if (regime === 'old' && totalIncome <= 500000) {
+      rebate = Math.min(slabTax, 12500);
+    }
+  }
+
+  let taxAfterRebate = Math.max(0, grossTax - rebate);
+
+  // Surcharge (capital gains/lottery capped at 15%, other income per normal slabs)
+  const surcharge = calculateSurcharge(totalIncome, taxAfterRebate, regime, false);
+
+  const taxWithSurcharge = taxAfterRebate + surcharge;
+  const cess = taxWithSurcharge * 0.04;
+  const finalTax = taxWithSurcharge + cess;
+
+  // Render breakdown
+  const fmt = (n) => '₹' + Math.round(n).toLocaleString('en-IN');
+  let html = '';
+  html += `<div>Total Income: <strong>${fmt(totalIncome)}</strong></div>`;
+  html += `<div>Slab-Taxed Income: ${fmt(slabIncome)} → Tax: ${fmt(slabTax)}</div>`;
+  if (specialRateTax > 0) {
+    html += `<div>Special-Rate Income (Capital Gains/Lottery): ${fmt(specialRateIncome)} → Tax: ${fmt(specialRateTax)}</div>`;
+  }
+  html += `<div>Gross Tax: ${fmt(grossTax)}</div>`;
+  if (rebate > 0) html += `<div>Less: Section 87A Rebate: −${fmt(rebate)}</div>`;
+  html += `<div>Tax After Rebate: ${fmt(taxAfterRebate)}</div>`;
+  if (surcharge > 0) html += `<div>Add: Surcharge: +${fmt(surcharge)}</div>`;
+  html += `<div>Add: Health &amp; Education Cess (4%): +${fmt(cess)}</div>`;
+  html += `<div style="margin-top:0.6rem; font-size:0.95rem; color:var(--gold);"><strong>Estimated Total Tax: ${fmt(finalTax)}</strong></div>`;
+
+  if (residency !== 'resident') {
+    html += `<div class="view-hint" style="margin-top:0.8rem;">As an NRI/RNOR, only India-sourced income should be entered above. Section 87A rebate and age-based slab benefits do not apply. DTAA treaty benefits, if applicable, are not factored in here.</div>`;
+  }
+
+  document.getElementById('calcBreakdown').innerHTML = html;
+  document.getElementById('calcResult').style.display = 'block';
+}
 
   async function loadMyTickets() {
     const { data, error } = await supabaseClient
