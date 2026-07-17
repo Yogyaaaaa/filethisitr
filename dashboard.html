@@ -768,7 +768,7 @@ function calculateTax() {
   const lotteryTax = lottery * 0.30;
 
   const specialRateTax = equityLTCGTax + equitySTCGTax + propertyLTCGTax + cryptoTax + lotteryTax;
-  const specialRateIncome = equitySTCG + equityLTCG + propertyLTCG + crypto + lottery;
+  const specialRateIncome = equitySTCG + equityLTCGTaxable + propertyLTCG + crypto + lottery;
 
   // Slab tax on slab income
   let slabTax = regime === 'new'
