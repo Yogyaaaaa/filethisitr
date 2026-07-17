@@ -777,15 +777,22 @@ function calculateTax() {
   let grossTax = slabTax + specialRateTax;
 
   // Section 87A Rebate — only for Residents (not NRI/RNOR), only on slab income tax portion
+  // Includes marginal relief: tax can never exceed income earned above the threshold.
   let rebate = 0;
   if (residency === 'resident') {
-    if (regime === 'new' && totalIncome <= 1200000) {
-      rebate = Math.min(slabTax, 60000);
-    } else if (regime === 'old' && totalIncome <= 500000) {
-      rebate = Math.min(slabTax, 12500);
+    const threshold = regime === 'new' ? 1200000 : 500000;
+    const maxRebate = regime === 'new' ? 60000 : 12500;
+
+    if (totalIncome <= threshold) {
+      rebate = Math.min(slabTax, maxRebate);
+    } else {
+      const excessIncome = totalIncome - threshold;
+      if (excessIncome < slabTax) {
+        // Marginal relief zone: cap tax at the excess income itself
+        rebate = slabTax - excessIncome;
+      }
     }
   }
-
   let taxAfterRebate = Math.max(0, grossTax - rebate);
 
   // Surcharge (capital gains/lottery capped at 15%, other income per normal slabs)
