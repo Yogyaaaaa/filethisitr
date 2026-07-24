@@ -1,4 +1,10 @@
 const crypto = require('crypto');
+const { createClient } = require('@supabase/supabase-js');
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -6,7 +12,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, ticket_number } = req.body;
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
       return res.status(400).json({ error: 'Missing payment details' });
@@ -22,8 +28,20 @@ module.exports = async (req, res) => {
     const isValid = expectedSignature === razorpay_signature;
 
     if (isValid) {
-      // Payment is genuine. In the next phase, this is where we'd
-      // save the payment record to the database against the Ticket ID.
+      if (ticket_number) {
+        const { error } = await supabase
+          .from('tickets')
+          .update({
+            payment_status: 'paid',
+            razorpay_order_id,
+            razorpay_payment_id
+          })
+          .eq('ticket_number', ticket_number);
+
+        if (error) {
+          console.error('Failed to update ticket after payment:', error);
+        }
+      }
       return res.status(200).json({ verified: true });
     } else {
       return res.status(400).json({ verified: false, error: 'Signature mismatch' });
