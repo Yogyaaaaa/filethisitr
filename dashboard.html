@@ -392,8 +392,6 @@
       </select>
       <label class="form-label">Preferred Date</label>
       <input type="date" class="form-input" id="itrDate">
-      <label class="form-label">Preferred Time Slot</label>
-      <div class="slot-grid" id="itrSlotGrid"></div>
       <button class="submit-btn" onclick="submitItrTicket()">Book Slot (Free)</button>
     </div>
 
@@ -875,17 +873,16 @@ function calculateTax() {
     const formType = document.getElementById('itrFormType');
     const date = document.getElementById('itrDate').value;
 
-    if (!date || !selectedItrSlot) {
-      alert('Please select a date and time slot.');
-      return;
-    }
-
+    if (!date) {
+  alert('Please select a date.');
+  return;
+}
     const { error } = await supabaseClient.from('tickets').insert([{
       service_type: 'itr',
       user_id: currentUser.id,
       user_email: currentUser.email,
       itr_form_type: formType.value,
-      slot_datetime: `${date}T${selectedItrSlot}:00`,
+      slot_datetime: `${date}T00:00:00`,
       payment_status: 'unpaid'
     }]);
 
