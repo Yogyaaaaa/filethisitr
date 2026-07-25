@@ -556,16 +556,26 @@ input[type="date"] {
     document.getElementById('mainArea').style.display = 'block';
    
     await loadMyTickets();
-  });
 
-  function switchView(viewId, el) {
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.getElementById(viewId).classList.add('active');
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    el.classList.add('active');
-    if (viewId === 'uploadView') populateUploadTicketSelect();
-    if (viewId === 'paymentsView') renderPayments();
+const savedView = sessionStorage.getItem('activeDashboardView');
+if (savedView && document.getElementById(savedView)) {
+  const navItem = document.querySelector(`[data-view="${savedView}"]`);
+  if (navItem) {
+    switchView(savedView, navItem);
   }
+}
+});
+ 
+  function switchView(viewId, el) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(viewId).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  el.classList.add('active');
+  if (viewId === 'uploadView') populateUploadTicketSelect();
+  if (viewId === 'paymentsView') renderPayments();
+
+  sessionStorage.setItem('activeDashboardView', viewId);
+}
 
   async function logout() {
     await supabaseClient.auth.signOut();
