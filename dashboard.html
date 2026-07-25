@@ -554,8 +554,7 @@ input[type="date"] {
     document.getElementById('loadingScreen').style.display = 'none';
     document.getElementById('sidebar').style.display = 'flex';
     document.getElementById('mainArea').style.display = 'block';
-
-    buildSlotGrid();
+   
     await loadMyTickets();
   });
 
@@ -643,22 +642,6 @@ function goToBooking() {
   document.getElementById('itrFormType').value = form;
 }
 
-  function buildSlotGrid() {
-    const grid = document.getElementById('itrSlotGrid');
-    for (let h = 10; h < 18; h++) {
-      [`${h}:00`, `${h}:30`].forEach(time => {
-        const btn = document.createElement('div');
-        btn.className = 'slot-btn';
-        btn.textContent = time;
-        btn.onclick = () => {
-          document.querySelectorAll('#itrSlotGrid .slot-btn').forEach(b => b.classList.remove('selected'));
-          btn.classList.add('selected');
-          selectedItrSlot = time;
-        };
-        grid.appendChild(btn);
-      });
-    }
-  }
 
  // ============ ESTIMATED TAX PAYOUTS LOGIC ============
 
