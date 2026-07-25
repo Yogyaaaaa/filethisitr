@@ -834,7 +834,7 @@ function calculateTax() {
   function renderTickets() {
     const list = document.getElementById('ticketList');
     if (myTickets.length === 0) {
-      list.innerHTML = '<div class="empty-state">No tickets yet — head to "Book a Slot" to get started.</div>';
+      list.innerHTML = '<div class="empty-state">No booking yet — head to "Book a Slot" to get started.</div>';
       return;
     }
     list.innerHTML = myTickets.map(t => {
@@ -915,7 +915,7 @@ function calculateTax() {
   function populateUploadTicketSelect() {
   const select = document.getElementById('uploadTicketSelect');
   select.innerHTML = myTickets.map(t => `<option value="${t.id}">${t.ticket_number} — ${t.service_type}</option>`).join('')
-    || '<option disabled>No tickets yet</option>';
+    || '<option disabled>No booking yet</option>';
   if (myTickets.length > 0) loadFilesForTicket(select.value);
   select.onchange = () => loadFilesForTicket(select.value);
 }
